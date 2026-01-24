@@ -1,6 +1,11 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
 import dotenv from "dotenv";
+import { Specialist } from "./entities/Specialist.entity";
+import { PlatformFee } from "./entities/PlatformFee.entity";
+import { ServiceOfferingsMasterList } from "./entities/ServiceOfferingsMasterList.entity";
+import { ServiceOffering } from "./entities/ServiceOffering.entity";
+import { Media } from "./entities/Media.entity";
 
 dotenv.config();
 
@@ -13,11 +18,14 @@ export const AppDataSource = new DataSource({
     database: process.env.DB_NAME || "anycomp_db",
     synchronize: process.env.NODE_ENV === "development",
     logging: process.env.LOGGING === "true",
-    entities: ["src/entities/**/*.ts"],
+    entities: [Specialist, PlatformFee, ServiceOfferingsMasterList, ServiceOffering, Media],
     migrations: ["src/migrations/**/*.ts"],
     subscribers: ["src/subscribers/**/*.ts"],
     // SSL configuration for cloud databases (Supabase, AWS RDS, etc.)
-    ssl: process.env.DB_SSL === "true" ? {
-        rejectUnauthorized: false
-    } : false,
+    ssl:
+        process.env.DB_SSL === "true"
+            ? {
+                rejectUnauthorized: false,
+            }
+            : false,
 });
