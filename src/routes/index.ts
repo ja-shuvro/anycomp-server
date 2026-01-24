@@ -1,18 +1,17 @@
 import { Router } from "express";
-import userRoutes from "./userRoutes";
+import healthRoutes from "./healthRoutes";
 
 const router = Router();
 
-// Mount routes
-router.use("/users", userRoutes);
+/**
+ * API v1 Routes
+ */
+router.use("/v1", healthRoutes);
 
-// Health check endpoint
-router.get("/health", (req, res) => {
-    res.status(200).json({
-        success: true,
-        message: "Server is running",
-        timestamp: new Date().toISOString(),
-    });
-});
+// Future routes will be added here:
+// router.use("/v1", platformFeeRoutes);
+// router.use("/v1", serviceOfferingRoutes);
+// router.use("/v1", specialistRoutes);
+// router.use("/v1", mediaRoutes);
 
 export default router;
