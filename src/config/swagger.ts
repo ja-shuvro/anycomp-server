@@ -137,7 +137,8 @@ const options: swaggerJsdoc.Options = {
     apis: [
         "./src/routes/*.ts",
         "./src/controllers/*.ts",
-        "./src/swagger/paths/*.ts"  // Load swagger documentation from dedicated files
+        "./src/swagger/paths/*.ts",
+        "./src/swagger/schemas/*.ts"
     ],
 };
 
