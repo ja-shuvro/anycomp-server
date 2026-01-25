@@ -5,6 +5,7 @@ import { CreatePlatformFeeDto } from "../dto/platform-fee/create-platform-fee.dt
 import { UpdatePlatformFeeDto } from "../dto/platform-fee/update-platform-fee.dto";
 import { NotFoundError, ConflictError, BadRequestError } from "../errors/custom-errors";
 import logger from "../utils/logger";
+import { calculateOffset } from "../utils/pagination.helper";
 
 /**
  * Platform Fee Service
@@ -18,7 +19,7 @@ export class PlatformFeeService {
      */
     async findAll(page: number = 1, limit: number = 10): Promise<{ items: PlatformFee[]; total: number }> {
         try {
-            const skip = (page - 1) * limit;
+            const skip = calculateOffset(page, limit);
 
             const [items, total] = await this.platformFeeRepository.findAndCount({
                 order: { minValue: "ASC" },

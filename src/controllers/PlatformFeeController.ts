@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { PlatformFeeService } from "../services/platform-fee.service";
-import { successResponse, paginatedResponse, PaginationMeta } from "../utils/response.helper";
+import { successResponse, paginatedResponse } from "../utils/response.helper";
+import { parsePaginationParams, generatePaginationMeta } from "../utils/pagination.helper";
 import { CreatePlatformFeeDto } from "../dto/platform-fee/create-platform-fee.dto";
 import { UpdatePlatformFeeDto } from "../dto/platform-fee/update-platform-fee.dto";
 
@@ -18,19 +19,11 @@ export class PlatformFeeController {
      */
     async getAll(req: Request, res: Response, next: NextFunction) {
         try {
-            const page = parseInt(req.query.page as string) || 1;
-            const limit = parseInt(req.query.limit as string) || 10;
+            const { page, limit } = parsePaginationParams(req.query.page as string, req.query.limit as string);
 
             const { items, total } = await this.platformFeeService.findAll(page, limit);
 
-            const pagination: PaginationMeta = {
-                currentPage: page,
-                totalPages: Math.ceil(total / limit),
-                totalItems: total,
-                itemsPerPage: limit,
-                hasNextPage: page < Math.ceil(total / limit),
-                hasPrevPage: page > 1,
-            };
+            const pagination = generatePaginationMeta(page, limit, total);
 
             return paginatedResponse(res, items, pagination, "Platform fees retrieved successfully");
         } catch (error) {
