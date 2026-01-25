@@ -3,38 +3,10 @@ import { AppDataSource } from "../data-source";
 import { successResponse } from "../utils/response.helper";
 
 /**
- * @swagger
- * /health:
- *   get:
- *     summary: Health check endpoint
- *     tags: [Health]
- *     description: Returns the health status of the API and database connection
- *     responses:
- *       200:
- *         description: API is healthy
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   type: object
- *                   properties:
- *                     status:
- *                       type: string
- *                       example: ok
- *                     timestamp:
- *                       type: string
- *                       format: date-time
- *                     uptime:
- *                       type: number
- *                       description: Server uptime in seconds
- *                     database:
- *                       type: string
- *                       example: connected
+ * Health Controller
+ * Handles health check requests
+ * 
+ * @see ../swagger/paths/health.docs.ts for API documentation
  */
 export class HealthController {
     /**

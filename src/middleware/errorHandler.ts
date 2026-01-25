@@ -1,49 +1,56 @@
 import { Request, Response, NextFunction } from "express";
+import { ApiError } from "../errors/custom-errors";
+import { errorResponse } from "../utils/response.helper";
+import logger from "../utils/logger";
 
-interface ErrorResponse {
-    success: false;
-    message: string;
-    errors?: any;
-    stack?: string;
-}
-
-export class AppError extends Error {
-    statusCode: number;
-    isOperational: boolean;
-
-    constructor(message: string, statusCode: number = 500) {
-        super(message);
-        this.statusCode = statusCode;
-        this.isOperational = true;
-        Error.captureStackTrace(this, this.constructor);
-    }
-}
-
+/**
+ * Global error handler middleware
+ * Catches all errors and returns standardized error responses
+ */
 export const errorHandler = (
-    err: Error | AppError,
+    err: Error | ApiError,
     req: Request,
     res: Response,
     next: NextFunction
 ) => {
-    const isAppError = err instanceof AppError;
-    const statusCode = isAppError ? err.statusCode : 500;
-    const message = err.message || "Internal Server Error";
+    // Handle custom API errors
+    if (err instanceof ApiError) {
+        logger.warn(`API Error: [${err.code}] ${err.message} - ${req.method} ${req.path}`);
 
-    const errorResponse: ErrorResponse = {
-        success: false,
-        message,
-    };
-
-    // Include stack trace in development
-    if (process.env.NODE_ENV === "development") {
-        errorResponse.stack = err.stack;
+        return errorResponse(
+            res,
+            err.code,
+            err.message,
+            err.statusCode,
+            req.path,
+            (err as any).details
+        );
     }
 
-    // Log error
-    console.error(`[ERROR] ${statusCode} - ${message}`);
-    if (process.env.NODE_ENV === "development") {
-        console.error(err.stack);
+    // Handle validation errors from class-validator
+    if ((err as any).errors && Array.isArray((err as any).errors)) {
+        logger.warn(`Validation Error: ${req.method} ${req.path}`);
+
+        return errorResponse(
+            res,
+            "VALIDATION_ERROR",
+            "Request validation failed",
+            422,
+            req.path,
+            (err as any).errors
+        );
     }
 
-    res.status(statusCode).json(errorResponse);
+    // Handle unknown errors
+    logger.error(`Unhandled Error: ${err.message}`, {
+        method: req.method,
+        path: req.path,
+        stack: err.stack,
+    });
+
+    // Don't expose internal error details in production
+    const message =
+        process.env.NODE_ENV === "development" ? err.message : "Internal server error";
+
+    return errorResponse(res, "INTERNAL_SERVER_ERROR", message, 500, req.path);
 };

@@ -134,7 +134,11 @@ const options: swaggerJsdoc.Options = {
             },
         ],
     },
-    apis: ["./src/routes/*.ts", "./src/controllers/*.ts"],
+    apis: [
+        "./src/routes/*.ts",
+        "./src/controllers/*.ts",
+        "./src/swagger/paths/*.ts"  // Load swagger documentation from dedicated files
+    ],
 };
 
 const swaggerSpec = swaggerJsdoc(options);

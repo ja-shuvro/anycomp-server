@@ -58,14 +58,16 @@ app.get("/", (req, res) => {
 app.use(errorHandler);
 
 // Initialize database and start server
+let server: any;
+
 const startServer = async () => {
     try {
         // Initialize TypeORM connection
         await AppDataSource.initialize();
         logger.info("✅ Database connection established successfully");
 
-        // Start Express server
-        app.listen(PORT, () => {
+        // Start Express server and store the instance
+        server = app.listen(PORT, () => {
             logger.info(`🚀 Server is running on port ${PORT}`);
             logger.info(`📍 API available at http://localhost:${PORT}/api/v1`);
             logger.info(`📚 API Documentation at http://localhost:${PORT}/api-docs`);
@@ -78,15 +80,29 @@ const startServer = async () => {
     }
 };
 
-// Handle graceful shutdown
-process.on("SIGINT", async () => {
-    logger.info("\n🛑 Shutting down gracefully...");
+// Graceful shutdown function
+const gracefulShutdown = async (signal: string) => {
+    logger.info(`\n🛑 ${signal} received, shutting down gracefully...`);
+
+    // Close HTTP server first to stop accepting new connections
+    if (server) {
+        server.close(() => {
+            logger.info("🛑 HTTP server closed");
+        });
+    }
+
+    // Close database connection
     if (AppDataSource.isInitialized) {
         await AppDataSource.destroy();
-        logger.info("✅ Database connection closed");
+        logger.info("🛑 Database connection closed");
     }
+
     process.exit(0);
-});
+};
+
+// Handle different shutdown signals
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM")); // For nodemon
 
 // Handle uncaught exceptions
 process.on("uncaughtException", (error: Error) => {
