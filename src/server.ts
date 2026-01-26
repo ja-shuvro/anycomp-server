@@ -15,7 +15,8 @@ import logger from "./utils/logger";
 dotenv.config();
 
 const app: Application = express();
-const PORT = process.env.APP_PORT || 3000;
+export const PORT = process.env.APP_PORT || 3000;
+export { app };
 
 // Security middleware (must be first)
 app.use(securityMiddleware);
@@ -119,5 +120,7 @@ process.on("unhandledRejection", (reason: any) => {
     process.exit(1);
 });
 
-// Start the server
-startServer();
+// Start the server if not in test environment
+if (process.env.NODE_ENV !== "test") {
+    startServer();
+}
