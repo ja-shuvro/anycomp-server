@@ -3,7 +3,7 @@ import {
     paginatedResponse,
     errorResponse,
     PaginationMeta,
-} from "../response.helper";
+} from "../../../src/middleware/response.helper";
 import { Response } from "express";
 
 describe("Response Helper Functions", () => {

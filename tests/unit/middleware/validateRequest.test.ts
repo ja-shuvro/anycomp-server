@@ -1,7 +1,7 @@
+import "reflect-metadata";
 import { Request, Response, NextFunction } from "express";
-import { validateRequest } from "../validateRequest";
+import { validateRequest } from "../../../src/middleware/validateRequest";
 import { IsString, IsEmail, MinLength } from "class-validator";
-import { ApiError } from "../../errors/custom-errors";
 
 // Sample DTO for testing
 class TestDTO {

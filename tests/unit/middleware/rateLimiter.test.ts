@@ -1,6 +1,6 @@
 import request from "supertest";
 import express, { Application } from "express";
-import { apiLimiter, strictLimiter } from "../rateLimiter";
+import { apiLimiter, strictLimiter } from "../../../src/middleware/rateLimiter";
 
 describe("Rate Limiter Middleware", () => {
     let app: Application;

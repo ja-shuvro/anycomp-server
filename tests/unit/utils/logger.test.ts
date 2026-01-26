@@ -1,4 +1,4 @@
-import logger from "../logger";
+import logger from "../../../src/utils/logger";
 
 describe("Logger Utility", () => {
     let consoleSpy: jest.SpyInstance;

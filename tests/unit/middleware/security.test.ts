@@ -1,6 +1,6 @@
 import request from "supertest";
 import express, { Application } from "express";
-import { securityMiddleware } from "../security";
+import { securityMiddleware } from "../../../src/middleware/security";
 
 describe("Security Middleware", () => {
     let app: Application;

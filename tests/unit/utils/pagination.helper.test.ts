@@ -2,7 +2,7 @@ import {
     parsePaginationParams,
     calculateOffset,
     generatePaginationMeta,
-} from "../pagination.helper";
+} from "../../../src/middleware/pagination.helper";
 
 describe("Pagination Helper Functions", () => {
     describe("parsePaginationParams", () => {

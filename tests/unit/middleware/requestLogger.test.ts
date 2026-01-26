@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from "express";
-import { requestLogger } from "../requestLogger";
-import logger from "../../utils/logger";
+import { requestLogger } from "../../../src/middleware/requestLogger";
+import logger from "../../../src/utils/logger";
 
 // Mock the logger
-jest.mock("../../utils/logger", () => ({
+jest.mock("../../../src/utils/logger", () => ({
     __esModule: true,
     default: {
         http: jest.fn(),
