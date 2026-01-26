@@ -74,6 +74,15 @@ export class Media {
     @Column({ type: "timestamp", name: "uploaded_at" })
     uploadedAt: Date;
 
+    @Column({ type: "varchar", length: 500, nullable: true, name: "s3_key" })
+    s3Key?: string;
+
+    @Column({ type: "varchar", length: 100, nullable: true, name: "bucket_name" })
+    bucketName?: string;
+
+    @Column({ type: "varchar", length: 1000, nullable: true, name: "public_url" })
+    publicUrl?: string;
+
     @DeleteDateColumn({ name: "deleted_at", nullable: true })
     deletedAt?: Date;
 

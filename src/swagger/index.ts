@@ -11,6 +11,8 @@
 // Import all swagger path documentation
 import './paths/platform-fee.docs';
 import './paths/health.docs';
+import './paths/media.docs';
+import './schemas/media.schema';
 
 // Export schemas for programmatic use
 export * from './schemas/platform-fee.schema';

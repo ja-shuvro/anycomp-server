@@ -1,20 +1,17 @@
 import { Router } from "express";
-import healthRoutes from "./health.routes";
 import platformFeeRoutes from "./platform-fee.routes";
 import serviceOfferingRoutes from "./service-offering.routes";
+import healthRoutes from "./health.routes";
 import specialistRoutes from "./specialist.routes";
+import mediaRoutes from "./media.routes";
 
 const router = Router();
 
-/**
- * API v1 Routes
- */
+// API version 1 routes
 router.use("/v1", healthRoutes);
 router.use("/v1", platformFeeRoutes);
 router.use("/v1", serviceOfferingRoutes);
 router.use("/v1", specialistRoutes);
-
-// Future routes will be added here:
-// router.use("/v1", mediaRoutes);
+router.use("/v1", mediaRoutes);
 
 export default router;

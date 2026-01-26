@@ -41,6 +41,9 @@ app.use("/api", apiLimiter);
 // API Documentation
 setupSwagger(app);
 
+// Static file serving for uploads
+app.use("/uploads", express.static("uploads"));
+
 // API Routes
 app.use("/api", routes);
 
