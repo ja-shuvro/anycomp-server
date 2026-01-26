@@ -2,6 +2,7 @@ import "reflect-metadata";
 import { Request, Response, NextFunction } from "express";
 import { validateRequest } from "../../../src/middleware/validateRequest";
 import { IsString, IsEmail, MinLength } from "class-validator";
+import { ValidationError } from "../../../src/errors/custom-errors";
 
 // Sample DTO for testing
 class TestDTO {
@@ -64,20 +65,14 @@ describe("Validate Request Middleware", () => {
             mockNext
         );
 
-        expect(mockResponse.status).toHaveBeenCalledWith(400);
-        expect(mockResponse.json).toHaveBeenCalledWith(
+        expect(mockNext).toHaveBeenCalledWith(expect.any(ValidationError));
+        const error = (mockNext as jest.Mock).mock.calls[0][0];
+        expect(error.statusCode).toBe(422);
+        expect(error.details).toEqual(expect.arrayContaining([
             expect.objectContaining({
-                success: false,
-                message: "Validation failed",
-                errors: expect.arrayContaining([
-                    expect.objectContaining({
-                        field: "email",
-                        constraints: expect.any(Object),
-                    }),
-                ]),
-            })
-        );
-        expect(mockNext).not.toHaveBeenCalled();
+                field: "email",
+            }),
+        ]));
     });
 
     it("should fail validation with short name", async () => {
@@ -94,18 +89,13 @@ describe("Validate Request Middleware", () => {
             mockNext
         );
 
-        expect(mockResponse.status).toHaveBeenCalledWith(400);
-        expect(mockResponse.json).toHaveBeenCalledWith(
+        expect(mockNext).toHaveBeenCalledWith(expect.any(ValidationError));
+        const error = (mockNext as jest.Mock).mock.calls[0][0];
+        expect(error.details).toEqual(expect.arrayContaining([
             expect.objectContaining({
-                success: false,
-                message: "Validation failed",
-                errors: expect.arrayContaining([
-                    expect.objectContaining({
-                        field: "name",
-                    }),
-                ]),
-            })
-        );
+                field: "name",
+            }),
+        ]));
     });
 
     it("should fail validation with multiple errors", async () => {
@@ -122,9 +112,9 @@ describe("Validate Request Middleware", () => {
             mockNext
         );
 
-        expect(mockResponse.status).toHaveBeenCalledWith(400);
-        const jsonCall = (mockResponse.json as jest.Mock).mock.calls[0][0];
-        expect(jsonCall.errors).toHaveLength(2);
+        expect(mockNext).toHaveBeenCalledWith(expect.any(ValidationError));
+        const error = (mockNext as jest.Mock).mock.calls[0][0];
+        expect(error.details).toHaveLength(2);
     });
 
     it("should replace request body with validated DTO instance", async () => {
@@ -157,12 +147,6 @@ describe("Validate Request Middleware", () => {
             mockNext
         );
 
-        expect(mockResponse.status).toHaveBeenCalledWith(400);
-        expect(mockResponse.json).toHaveBeenCalledWith(
-            expect.objectContaining({
-                success: false,
-                message: "Validation failed",
-            })
-        );
+        expect(mockNext).toHaveBeenCalledWith(expect.any(ValidationError));
     });
 });

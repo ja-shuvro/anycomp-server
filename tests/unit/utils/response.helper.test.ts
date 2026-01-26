@@ -1,10 +1,6 @@
-import {
-    successResponse,
-    paginatedResponse,
-    errorResponse,
-    PaginationMeta,
-} from "../../../src/middleware/response.helper";
+
 import { Response } from "express";
+import { successResponse, paginatedResponse, errorResponse, PaginationMeta } from "../../../src/utils/response.helper";
 
 describe("Response Helper Functions", () => {
     let mockResponse: Partial<Response>;

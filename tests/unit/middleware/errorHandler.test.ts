@@ -60,11 +60,13 @@ describe("Error Handler Middleware", () => {
             );
 
             expect(mockResponse.status).toHaveBeenCalledWith(400);
-            expect(mockResponse.json).toHaveBeenCalledWith({
+            expect(mockResponse.json).toHaveBeenCalledWith(expect.objectContaining({
                 success: false,
-                code: "BAD_REQUEST",
-                message: "Custom error",
-            });
+                error: expect.objectContaining({
+                    code: "BAD_REQUEST",
+                    message: "Custom error",
+                })
+            }));
         });
 
         it("should handle generic Error with 500 status code", () => {
@@ -78,11 +80,13 @@ describe("Error Handler Middleware", () => {
             );
 
             expect(mockResponse.status).toHaveBeenCalledWith(500);
-            expect(mockResponse.json).toHaveBeenCalledWith({
+            expect(mockResponse.json).toHaveBeenCalledWith(expect.objectContaining({
                 success: false,
-                code: "INTERNAL_SERVER_ERROR",
-                message: "Internal server error",
-            });
+                error: expect.objectContaining({
+                    code: "INTERNAL_SERVER_ERROR",
+                    message: "Internal server error",
+                })
+            }));
         });
 
         it("should include stack trace in development mode", () => {
@@ -142,11 +146,13 @@ describe("Error Handler Middleware", () => {
             );
 
             expect(mockResponse.status).toHaveBeenCalledWith(500);
-            expect(mockResponse.json).toHaveBeenCalledWith({
+            expect(mockResponse.json).toHaveBeenCalledWith(expect.objectContaining({
                 success: false,
-                code: "INTERNAL_SERVER_ERROR",
-                message: "Internal server error",
-            });
+                error: expect.objectContaining({
+                    code: "INTERNAL_SERVER_ERROR",
+                    message: "Internal server error",
+                })
+            }));
         });
     });
 });

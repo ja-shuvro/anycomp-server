@@ -1,8 +1,5 @@
-import {
-    parsePaginationParams,
-    calculateOffset,
-    generatePaginationMeta,
-} from "../../../src/middleware/pagination.helper";
+import { parsePaginationParams, calculateOffset, generatePaginationMeta } from "../../../src/utils/pagination.helper";
+
 
 describe("Pagination Helper Functions", () => {
     describe("parsePaginationParams", () => {

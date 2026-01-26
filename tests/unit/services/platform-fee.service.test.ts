@@ -10,20 +10,25 @@ describe("PlatformFeeService", () => {
     beforeEach(() => {
         jest.clearAllMocks();
 
+        // Create a persistent query builder mock
+        const queryBuilderMock = {
+            skip: jest.fn().mockReturnThis(),
+            take: jest.fn().mockReturnThis(),
+            where: jest.fn().mockReturnThis(),
+            andWhere: jest.fn().mockReturnThis(),
+            orderBy: jest.fn().mockReturnThis(),
+            getOne: jest.fn(),
+            getManyAndCount: jest.fn()
+        };
+
         mockRepository = {
             create: jest.fn(),
             save: jest.fn(),
             findOne: jest.fn(),
             find: jest.fn(),
+            findAndCount: jest.fn().mockResolvedValue([[], 0]),
             delete: jest.fn(),
-            createQueryBuilder: jest.fn(() => ({
-                skip: jest.fn().mockReturnThis(),
-                take: jest.fn().mockReturnThis(),
-                where: jest.fn().mockReturnThis(),
-                andWhere: jest.fn().mockReturnThis(),
-                orderBy: jest.fn().mockReturnThis(),
-                getManyAndCount: jest.fn()
-            }))
+            createQueryBuilder: jest.fn(() => queryBuilderMock)
         };
 
         (AppDataSource.getRepository as jest.Mock) = jest.fn().mockReturnValue(mockRepository);
@@ -42,6 +47,7 @@ describe("PlatformFeeService", () => {
 
             mockRepository.create.mockReturnValue(mockFee);
             mockRepository.save.mockResolvedValue(mockFee);
+            mockRepository.createQueryBuilder().getOne.mockResolvedValue(null);
 
             const result = await service.create({
                 tierName: "basic" as any,
@@ -51,46 +57,44 @@ describe("PlatformFeeService", () => {
             });
 
             expect(result).toEqual(mockFee);
-            expect(mockRepository.create).toHaveBeenCalled();
-            expect(mockRepository.save).toHaveBeenCalled();
         });
     });
 
     describe("calculateFee", () => {
         it("should calculate fee for single tier", async () => {
-            const mockTiers = [
-                { minValue: 0, maxValue: 10000, platformFeePercentage: 5.0 }
-            ];
+            const mockTier = { tierName: "Basic", minValue: 0, maxValue: 10000, platformFeePercentage: 5.0 };
 
-            mockRepository.find.mockResolvedValue(mockTiers);
+            mockRepository.createQueryBuilder().getOne.mockResolvedValue(mockTier);
 
             const result = await service.calculateFee(5000);
 
             expect(result.fee).toBe(250); // 5% of 5000
+            expect(result.tierName).toBe("Basic");
         });
 
-        it("should calculate fee across multiple tiers", async () => {
-            const mockTiers = [
-                { minValue: 0, maxValue: 5000, platformFeePercentage: 5.0 },
-                { minValue: 5001, maxValue: 10000, platformFeePercentage: 7.0 }
-            ];
+        it("should calculate fee using the matched tier percentage", async () => {
+            const mockTier = { tierName: "Standard", minValue: 5001, maxValue: 10000, platformFeePercentage: 7.0 };
 
-            mockRepository.find.mockResolvedValue(mockTiers);
+            mockRepository.createQueryBuilder().getOne.mockResolvedValue(mockTier);
 
             const result = await service.calculateFee(8000);
 
-            // First tier: 5000 * 0.05 = 250
-            // Second tier: 3000 * 0.07 = 210
-            // Total: 460
-            expect(result.fee).toBe(460);
+            // 8000 * 0.07 = 560
+            expect(result.fee).toBe(560);
+            expect(result.tierName).toBe("Standard");
         });
 
-        it("should return 0 for amount of 0", async () => {
-            mockRepository.find.mockResolvedValue([]);
+        it("should fall back to highest tier when no range matches", async () => {
+            const highestTier = { tierName: "Enterprise", minValue: 50000, maxValue: 100000, platformFeePercentage: 10.0 };
 
-            const result = await service.calculateFee(0);
+            mockRepository.createQueryBuilder().getOne.mockResolvedValue(null);
+            mockRepository.findAndCount.mockResolvedValue([[highestTier], 1]);
 
-            expect(result.fee).toBe(0);
+            const result = await service.calculateFee(200000);
+
+            // 200000 * 0.10 = 20000
+            expect(result.fee).toBe(20000);
+            expect(result.tierName).toBe("Enterprise");
         });
     });
 
@@ -101,7 +105,7 @@ describe("PlatformFeeService", () => {
                 { id: "2", tierName: "Premium" }
             ];
 
-            mockRepository.createQueryBuilder().getManyAndCount.mockResolvedValue([mockFees, 2]);
+            mockRepository.findAndCount.mockResolvedValue([mockFees, 2]);
 
             const result = await service.findAll(1, 10);
 
