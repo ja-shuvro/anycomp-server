@@ -31,6 +31,9 @@ router.patch(
     controller.update.bind(controller)
 );
 
+// PATCH /specialists/:id/publish - Publish specialist
+router.patch("/specialists/:id/publish", controller.publish.bind(controller));
+
 // DELETE /specialists/:id - Delete specialist
 router.delete("/specialists/:id", controller.delete.bind(controller));
 

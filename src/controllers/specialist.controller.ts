@@ -86,6 +86,19 @@ export class SpecialistController {
     }
 
     /**
+     * Publish specialist (draft to published)
+     */
+    async publish(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { id } = req.params;
+            const specialist = await this.service.publish(id);
+            return successResponse(res, specialist, "Specialist published successfully");
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /**
      * Delete specialist
      */
     async delete(req: Request, res: Response, next: NextFunction) {

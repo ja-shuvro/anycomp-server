@@ -236,6 +236,38 @@ export class SpecialistService {
     }
 
     /**
+     * Publish specialist (transition from draft to published)
+     */
+    async publish(id: string): Promise<Specialist> {
+        const specialist = await this.findOne(id);
+
+        // Validation: Check if already published
+        if (!specialist.isDraft) {
+            throw new BadRequestError("Specialist is already published");
+        }
+
+        // Validation: Check if has required fields
+        if (!specialist.title || !specialist.description || !specialist.basePrice || !specialist.durationDays) {
+            throw new BadRequestError("Missing required fields for publishing");
+        }
+
+        // Validation: Check if has at least one service
+        if (!specialist.serviceOfferings || specialist.serviceOfferings.length === 0) {
+            throw new BadRequestError("Specialist must have at least one service to be published");
+        }
+
+        // Validation: Check verification status
+        if (specialist.verificationStatus === VerificationStatus.REJECTED) {
+            throw new BadRequestError("Cannot publish a rejected specialist");
+        }
+
+        // Update to published
+        specialist.isDraft = false;
+
+        return await this.specialistRepo.save(specialist);
+    }
+
+    /**
      * Delete specialist (soft delete)
      */
     async delete(id: string): Promise<void> {

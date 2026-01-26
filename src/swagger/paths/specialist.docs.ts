@@ -126,6 +126,30 @@
  *       200:
  *         description: Updated successfully
  *
+ * /specialists/{id}/publish:
+ *   patch:
+ *     summary: Publish specialist (draft to published)
+ *     description: Transitions a specialist from draft to published status. Validates that the specialist has all required fields and at least one service.
+ *     tags: [Specialists]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Published successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Specialist'
+ *       400:
+ *         description: Validation failed (already published, missing services, rejected status, etc.)
+ *       404:
+ *         description: Specialist not found
+ *
  *   delete:
  *     summary: Delete specialist
  *     tags: [Specialists]
