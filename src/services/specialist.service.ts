@@ -184,10 +184,28 @@ export class SpecialistService {
             query.andWhere("s.averageRating >= :minRating", { minRating: filters.minRating });
         }
 
+        // Sorting
+        const sortOrder = filters.sortOrder === 'asc' ? 'ASC' : 'DESC';
+
+        switch (filters.sortBy) {
+            case 'price':
+                query.orderBy("s.finalPrice", sortOrder);
+                break;
+            case 'rating':
+                query.orderBy("s.averageRating", sortOrder);
+                break;
+            case 'alphabetical':
+                query.orderBy("s.title", sortOrder);
+                break;
+            case 'newest':
+            default:
+                query.orderBy("s.createdAt", "DESC");
+                break;
+        }
+
         // Pagination
         const skip = calculateOffset(page, limit);
         query.skip(skip).take(limit);
-        query.orderBy("s.createdAt", "DESC");
 
         const [items, total] = await query.getManyAndCount();
 

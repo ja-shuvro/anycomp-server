@@ -35,4 +35,14 @@ export class FilterSpecialistDto {
     @Min(0)
     @Transform(({ value }) => parseFloat(value))
     minRating?: number;
+
+    @IsString()
+    @IsOptional()
+    @IsEnum(['price', 'rating', 'newest', 'alphabetical'])
+    sortBy?: 'price' | 'rating' | 'newest' | 'alphabetical';
+
+    @IsString()
+    @IsOptional()
+    @IsEnum(['asc', 'desc'])
+    sortOrder?: 'asc' | 'desc';
 }

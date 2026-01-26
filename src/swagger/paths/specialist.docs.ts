@@ -42,6 +42,17 @@
  *         name: maxPrice
  *         schema:
  *           type: number
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           enum: [price, rating, newest, alphabetical]
+ *       - in: query
+ *         name: sortOrder
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: desc
  *     responses:
  *       200:
  *         description: List of specialists

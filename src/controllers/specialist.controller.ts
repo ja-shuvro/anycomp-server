@@ -23,8 +23,17 @@ export class SpecialistController {
         try {
             const { page, limit } = parsePaginationParams(req.query.page as string, req.query.limit as string);
 
-            // Transform query params to DTO
-            const filters = plainToInstance(FilterSpecialistDto, req.query);
+            // Map query params directly to avoid transformation issues
+            const filters: any = {
+                search: req.query.search,
+                status: req.query.status,
+                isDraft: req.query.isDraft === 'true' ? true : req.query.isDraft === 'false' ? false : undefined,
+                minPrice: req.query.minPrice ? parseFloat(req.query.minPrice as string) : undefined,
+                maxPrice: req.query.maxPrice ? parseFloat(req.query.maxPrice as string) : undefined,
+                minRating: req.query.minRating ? parseFloat(req.query.minRating as string) : undefined,
+                sortBy: req.query.sortBy,
+                sortOrder: req.query.sortOrder
+            };
 
             const { items, total } = await this.service.findAll(filters, page, limit);
 
