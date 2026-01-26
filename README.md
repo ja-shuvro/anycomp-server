@@ -46,8 +46,8 @@ NODE_ENV=development
 # Database
 DB_HOST=localhost
 DB_PORT=5432
-DB_USERNAME=postgres
-DB_PASSWORD=your_password
+DB_USER=postgres
+DB_PASS=your_password
 DB_NAME=anycomp_db
 
 # CORS
@@ -78,8 +78,11 @@ npm run dev
 
 # Production build
 npm run build
-npm start
+NODE_ENV=production npm start
 ```
+
+> [!IMPORTANT]
+> The server performs environment variable validation on startup. Ensure all variables in `.env.example` are present in your `.env` file for the application to run.
 
 The API will be available at `http://localhost:3000`
 

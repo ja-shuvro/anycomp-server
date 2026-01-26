@@ -1,7 +1,7 @@
 import { AppDataSource } from "../data-source";
 import { Media, MimeType, MediaType } from "../entities/Media.entity";
 import { Specialist } from "../entities/Specialist.entity";
-import { NotFoundError, BadRequestError } from "../errors/custom-errors";
+import { NotFoundError } from "../errors/custom-errors";
 import logger from "../utils/logger";
 import fs from "fs";
 import path from "path";

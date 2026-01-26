@@ -14,6 +14,9 @@ import logger from "./utils/logger";
 // Load environment variables
 dotenv.config();
 
+import { validateEnv } from "./utils/env-validator";
+validateEnv();
+
 const app: Application = express();
 export const PORT = process.env.APP_PORT || 3000;
 export { app };

@@ -35,6 +35,7 @@ export class SpecialistService {
         let uniqueSlug = slug;
         let counter = 1;
 
+        // eslint-disable-next-line no-constant-condition
         while (true) {
             const query = this.specialistRepo.createQueryBuilder("s")
                 .where("s.slug = :slug", { slug: uniqueSlug });

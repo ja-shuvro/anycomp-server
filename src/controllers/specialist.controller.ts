@@ -4,8 +4,6 @@ import { successResponse, paginatedResponse } from "../utils/response.helper";
 import { parsePaginationParams, generatePaginationMeta } from "../utils/pagination.helper";
 import { CreateSpecialistDto } from "../dto/specialist/create-specialist.dto";
 import { UpdateSpecialistDto } from "../dto/specialist/update-specialist.dto";
-import { FilterSpecialistDto } from "../dto/specialist/filter-specialist.dto";
-import { plainToInstance } from "class-transformer";
 
 /**
  * Specialist Controller
