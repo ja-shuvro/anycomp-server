@@ -1,352 +1,292 @@
-# Anycomp Backend Server
+# Anycomp Server - Backend API
 
-A production-grade Node.js Express backend built with TypeScript and TypeORM for the Anycomp Specialist Management Platform.
+A comprehensive NestJS-style backend API for managing specialists, services, and media files. Built with Express, TypeORM, and PostgreSQL.
 
-## 🏗️ Architecture
+## 🚀 Features
 
-This project follows a modular, layered architecture pattern:
+- **Platform Fee Management** - Dynamic fee calculation with tiered pricing
+- **Service Offerings** - Manage master list of available services
+- **Specialist Profiles** - Complete CRUD with draft/publish workflow
+- **Advanced Filtering & Sorting** - Search, filter by status/price/rating, sort by multiple criteria
+- **Media Management** - File uploads with validation (images, videos, PDFs)
+- **Soft Delete** - Data preservation with soft delete pattern
+- **Health Monitoring** - Endpoint for system and database health checks
+- **Swagger Documentation** - Interactive API documentation at `/api-docs`
 
-```
-/anycomp-server
-├── /src
-│   ├── /entities        # TypeORM database models
-│   ├── /controllers     # Request/response handlers
-│   ├── /routes          # Express route definitions
-│   ├── /services        # Business logic layer
-│   ├── /middleware      # Custom middleware (validation, error handling, security)
-│   ├── /dto             # Data Transfer Objects for validation
-│   ├── /utils           # Helper utilities (logger, response formatters)
-│   ├── /errors          # Custom error classes
-│   ├── /config          # Configuration files (Swagger, database)
-│   ├── /swagger         # Swagger documentation (schemas, paths)
-│   ├── /migrations      # Database migrations
-│   ├── /seeds           # Database seed data
-│   ├── data-source.ts   # TypeORM connection configuration
-│   └── server.ts        # Application entry point
-├── .env                 # Environment variables (gitignored)
-├── .env.example         # Environment variables template
-├── nodemon.json         # Nodemon configuration
-├── package.json
-├── tsconfig.json
-└── README.md
-```
+## 📋 Prerequisites
 
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Node.js (v18 or higher)
-- PostgreSQL (v13 or higher)
+- Node.js >= 18.x
+- PostgreSQL >= 14.x
 - npm or yarn
 
-### Installation
+## 🛠️ Installation
 
-1. **Clone or navigate to the project directory**
-   ```bash
-   cd /Users/ja.shuvro/workspace/project/backend/anycomp-server
-   ```
+```bash
+# Clone the repository
+git clone <repository-url>
+cd anycomp-server
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+# Install dependencies
+npm install
 
-3. **Configure environment variables**
-   ```bash
-   cp .env.example .env
-   ```
-   
-   Edit `.env` and update the database credentials:
-   ```env
-   DB_HOST=localhost
-   DB_PORT=5432
-   DB_USER=postgres
-   DB_PASS=your_password
-   DB_NAME=anycomp_db
-   APP_PORT=3000
-   NODE_ENV=development
-   ```
+# Configure environment variables
+cp .env.example .env
+# Edit .env with your database credentials
+```
 
-4. **Create PostgreSQL database**
-   ```bash
-   # Connect to PostgreSQL
-   psql -U postgres
-   
-   # Create database
-   CREATE DATABASE anycomp_db;
-   ```
+## ⚙️ Environment Configuration
 
-5. **Run migrations and seed data**
-   ```bash
-   npm run typeorm migration:run
-   npm run seed
-   ```
+Create a `.env` file in the root directory:
 
-6. **Start the development server**
-   ```bash
-   npm run dev
-   ```
+```env
+# Application
+APP_PORT=3000
+NODE_ENV=development
 
-   The server will start on `http://localhost:3000`
+# Database
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=postgres
+DB_PASSWORD=your_password
+DB_NAME=anycomp_db
 
-### Available Scripts
+# CORS
+CORS_ORIGIN=*
 
-- `npm run dev` - Start development server with hot reload (nodemon)
-- `npm run build` - Build TypeScript to JavaScript
-- `npm start` - Run production server
-- `npm run typeorm` - Run TypeORM CLI commands
-- `npm run seed` - Seed database with initial data
+# Logging
+LOG_LEVEL=info
+```
+
+## 🗄️ Database Setup
+
+```bash
+# Run migrations
+npm run migration:run
+
+# Generate a new migration (after entity changes)
+npm run migration:generate -- src/migrations/MigrationName
+
+# Revert last migration
+npm run migration:revert
+```
+
+## 🏃 Running the Application
+
+```bash
+# Development mode with hot reload
+npm run dev
+
+# Production build
+npm run build
+npm start
+```
+
+The API will be available at `http://localhost:3000`
 
 ## 📚 API Documentation
 
-Interactive API documentation is available via Swagger UI:
+Interactive Swagger documentation: `http://localhost:3000/api-docs`
 
-**Swagger UI:** `http://localhost:3000/api-docs`
+### Core Endpoints
 
-![Swagger Documentation](/Users/ja.shuvro/.gemini/antigravity/brain/c59f6b0c-47b5-4130-820f-37a5c6128a43/platform_fees_pagination_docs_1769322389187.png)
+#### Platform Fees
+```
+GET    /api/v1/platform-fees              # List all fee tiers
+POST   /api/v1/platform-fees              # Create fee tier
+GET    /api/v1/platform-fees/:id          # Get fee tier
+PATCH  /api/v1/platform-fees/:id          # Update fee tier
+DELETE /api/v1/platform-fees/:id          # Delete fee tier
+POST   /api/v1/platform-fees/calculate    # Calculate fee for amount
+```
 
-## 📡 API Endpoints
+#### Service Offerings
+```
+GET    /api/v1/service-offerings           # List all services
+POST   /api/v1/service-offerings           # Create service
+GET    /api/v1/service-offerings/:id       # Get service
+PATCH  /api/v1/service-offerings/:id       # Update service
+DELETE /api/v1/service-offerings/:id       # Delete service
+```
 
-Base URL: `http://localhost:3000/api/v1`
+#### Specialists
+```
+GET    /api/v1/specialists                 # List specialists (with filters)
+POST   /api/v1/specialists                 # Create specialist
+GET    /api/v1/specialists/:id             # Get specialist
+PATCH  /api/v1/specialists/:id             # Update specialist
+DELETE /api/v1/specialists/:id             # Delete specialist (soft)
+PATCH  /api/v1/specialists/:id/publish     # Publish specialist
+```
 
-### Health Check
-- **GET** `/health` - Check server and database status
+**Specialist Filters & Sorting:**
+```
+?search=keyword              # Search in title/description
+?status=verified             # Filter by status (pending/verified/rejected)
+?isDraft=false               # Filter by draft status
+?minPrice=1000&maxPrice=5000 # Filter by price range
+?minRating=4.0               # Filter by minimum rating
+?sortBy=price                # Sort by: price, rating, alphabetical, newest
+?sortOrder=desc              # Sort order: asc, desc
+?page=1&limit=10             # Pagination
+```
 
-### Platform Fees
-- **GET** `/platform-fees` - Get all platform fee tiers (with pagination)
-  - Query params: `?page=1&limit=10`
-- **GET** `/platform-fees/:id` - Get platform fee by ID
-- **POST** `/platform-fees` - Create new platform fee tier
-- **PATCH** `/platform-fees/:id` - Update platform fee tier
-- **DELETE** `/platform-fees/:id` - Delete platform fee tier
+#### Media
+```
+POST   /api/v1/media/upload                      # Upload file (multipart/form-data)
+DELETE /api/v1/media/:id                         # Delete media
+GET    /api/v1/media/specialist/:specialistId    # List specialist media
+PATCH  /api/v1/media/:id/reorder                 # Update display order
+```
 
-### Example Requests
-
-**Health Check:**
+**Upload Example:**
 ```bash
-curl http://localhost:3000/api/v1/health
+curl -X POST http://localhost:3000/api/v1/media/upload \
+  -F "file=@image.jpg" \
+  -F "specialistId=uuid-here" \
+  -F "displayOrder=1"
 ```
 
-**Get Platform Fees (with pagination):**
-```bash
-curl "http://localhost:3000/api/v1/platform-fees?page=1&limit=10"
+**Allowed File Types:**
+- Images: JPEG, PNG, WebP (max 5MB)
+- Videos: MP4 (max 10MB)
+- Documents: PDF (max 5MB)
+
+#### Health
+```
+GET /api/v1/health    # System health check
 ```
 
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "items": [
-      {
-        "id": "uuid",
-        "tierName": "basic",
-        "minValue": 0,
-        "maxValue": 5000,
-        "platformFeePercentage": 5.0,
-        "createdAt": "2026-01-25T...",
-        "updatedAt": "2026-01-25T..."
-      }
-    ],
-    "pagination": {
-      "currentPage": 1,
-      "totalPages": 3,
-      "totalItems": 25,
-      "itemsPerPage": 10,
-      "hasNextPage": true,
-      "hasPrevPage": false
-    }
-  }
-}
-```
-
-**Create Platform Fee:**
-```bash
-curl -X POST http://localhost:3000/api/v1/platform-fees \
-  -H "Content-Type: application/json" \
-  -d '{
-    "tierName": "premium",
-    "minValue": 10000,
-    "maxValue": 20000,
-    "platformFeePercentage": 3.5
-  }'
-```
-
-## 🛡️ Features
-
-### ✅ Production-Ready Features
-
-- **Swagger/OpenAPI Documentation** - Interactive API docs at `/api-docs`
-- **Pagination Support** - All list endpoints support pagination with metadata
-- **Request Validation** - Using `class-validator` decorators in DTOs
-- **Global Error Handling** - Consistent error responses across all endpoints
-- **Security Middleware** - Helmet, CORS, rate limiting
-- **Request Logging** - HTTP request/response logging with Winston
-- **Graceful Shutdown** - Proper cleanup on SIGTERM/SIGINT signals
-- **TypeORM Integration** - Type-safe database operations
-- **Environment-Based Config** - Secure configuration management
-
-### Swagger Documentation Structure
-
-Swagger documentation is separated from controller code for maintainability:
+## 🏗️ Project Structure
 
 ```
-/src/swagger
-├── index.ts              # Central export point
-├── /schemas              # Reusable schema definitions
-│   ├── platform-fee.schema.ts
-│   └── health.schema.ts
-└── /paths                # API endpoint documentation
-    ├── platform-fee.docs.ts
-    └── health.docs.ts
+src/
+├── config/           # Configuration files (Swagger, upload)
+├── controllers/      # Route controllers
+├── dto/              # Data Transfer Objects with validation
+├── entities/         # TypeORM entities
+├── errors/           # Custom error classes
+├── middleware/       # Express middleware
+├── migrations/       # Database migrations
+├── routes/           # API routes
+├── services/         # Business logic layer
+├── swagger/          # Swagger documentation
+│   ├── paths/        # API path documentation
+│   └── schemas/      # Schema definitions
+└── utils/            # Utility functions
 ```
 
-### Request Validation
+## 🔒 Error Handling
 
-All incoming requests are validated using `class-validator` decorators in DTO classes. Invalid requests return detailed error messages:
+All endpoints return consistent error responses:
 
-```json
-{
-  "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Validation failed",
-    "statusCode": 400,
-    "details": ["minValue must be less than maxValue"]
-  }
-}
-```
-
-### Response Format
-
-All API responses follow a consistent format:
-
-**Success Response:**
-```json
-{
-  "success": true,
-  "data": { ... },
-  "message": "Operation successful"
-}
-```
-
-**Error Response:**
 ```json
 {
   "success": false,
   "error": {
     "code": "ERROR_CODE",
-    "message": "Error message",
+    "message": "Error description",
     "statusCode": 400,
-    "timestamp": "2026-01-25T...",
+    "timestamp": "2026-01-26T10:00:00.000Z",
     "path": "/api/v1/endpoint"
   }
 }
 ```
 
-## 🏛️ Project Structure Details
+**Common Error Codes:**
+- `BAD_REQUEST` (400) - Invalid input
+- `NOT_FOUND` (404) - Resource not found
+- `VALIDATION_ERROR` (400) - DTO validation failed
+- `INTERNAL_SERVER_ERROR` (500) - Server error
 
-### Entities (`/src/entities`)
-TypeORM models representing database tables. Use decorators like `@Entity`, `@Column`, `@PrimaryGeneratedColumn`.
+## 📝 Key Features in Detail
 
-### Controllers (`/src/controllers`)
-Handle HTTP requests and responses. Extract data from requests, call services, and format responses. **Swagger documentation is separate** in `/src/swagger/paths`.
+### Platform Fee Calculation
 
-### Routes (`/src/routes`)
-Define Express routes and apply middleware. Map HTTP methods to controller functions.
-
-### Services (`/src/services`)
-Business logic layer. Handle data processing, validation, and database operations.
-
-### Middleware (`/src/middleware`)
-Custom middleware for:
-- Request validation (`validateRequest`)
-- Error handling (`errorHandler`)
-- Security (`securityMiddleware`)
-- Rate limiting (`apiLimiter`)
-- Request logging (`requestLogger`)
-
-### DTOs (`/src/dto`)
-Data Transfer Objects with validation rules using `class-validator` decorators.
-
-### Swagger (`/src/swagger`)
-Centralized API documentation separated from controller code:
-- `schemas/` - Reusable schema definitions
-- `paths/` - Endpoint documentation
-
-## 🔧 Development Guidelines
-
-### Adding a New Feature
-
-1. **Create Entity** in `/src/entities`
-2. **Create DTO** in `/src/dto` with validation rules
-3. **Create Service** in `/src/services` with business logic
-4. **Create Controller** in `/src/controllers` (clean, no Swagger comments)
-5. **Create Swagger Docs** in `/src/swagger/paths` and `/src/swagger/schemas`
-6. **Create Routes** in `/src/routes`
-7. **Mount Routes** in `/src/routes/index.ts`
-8. **Update swagger/index.ts** to import new documentation
-
-### Error Handling
-
-Use custom error classes from `/src/errors/custom-errors.ts`:
-
+Tiered percentage-based fees:
 ```typescript
-throw new NotFoundError("Platform fee not found", "PLATFORM_FEE_NOT_FOUND");
-throw new ValidationError("Invalid input", "VALIDATION_ERROR");
-throw new ConflictError("Tier already exists", "TIER_EXISTS");
+// Example: Base price 10,000
+// Tier: 0-5000 (5%), 5001-10000 (7%)
+// Calculation: (5000 * 0.05) + (5000 * 0.07) = 600
 ```
 
-### Adding Swagger Documentation
+### Specialist Workflow
 
-1. Create schema in `/src/swagger/schemas/your-module.schema.ts`
-2. Create path docs in `/src/swagger/paths/your-module.docs.ts`
-3. Import both in `/src/swagger/index.ts`
+1. **Create** - Specialist created in draft mode (`isDraft: true`)
+2. **Add Services** - Assign service offerings
+3. **Upload Media** - Add images/videos/documents
+4. **Publish** - Validate and set `isDraft: false`
 
-## 📝 Environment Variables
+**Publishing Requirements:**
+- All required fields (title, description, price, duration)
+- At least one service offering
+- Status not "rejected"
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `DB_HOST` | PostgreSQL host | localhost |
-| `DB_PORT` | PostgreSQL port | 5432 |
-| `DB_USER` | Database username | postgres |
-| `DB_PASS` | Database password | - |
-| `DB_NAME` | Database name | anycomp_db |
-| `APP_PORT` | Application port | 3000 |
-| `NODE_ENV` | Environment mode | development |
-| `CORS_ORIGIN` | CORS allowed origins | * |
-| `LOG_LEVEL` | Winston log level | info |
+### Media Management
 
-## 🔍 Troubleshooting
+- Files stored in `uploads/` directory
+- Auto-generated unique filenames
+- Soft delete removes DB record AND physical file
+- Display order for galleries
+- Public URL generation for access
 
-### Port Already in Use
-
-If you see "EADDRINUSE: address already in use :::3000":
+## 🧪 Testing
 
 ```bash
-# Kill processes on port 3000
-lsof -ti:3000 | xargs kill -9
+# Run tests (when implemented)
+npm test
 
-# Or kill all node processes
-pkill -f "ts-node src/server.ts" && pkill -f nodemon
+# Test coverage
+npm run test:cov
 ```
 
-The server has graceful shutdown built-in. Press `Ctrl+C` once to shutdown cleanly.
+## 🚢 Deployment
 
-### Nodemon Issues
+### Production Build
 
-- Type `rs` in the nodemon console to manually restart
-- Nodemon has a 1-second delay before restart to prevent port conflicts
+```bash
+npm run build
+NODE_ENV=production node dist/server.js
+```
 
-## 🤝 Contributing
+### Environment Variables (Production)
 
-1. Create feature branch
-2. Make changes following the development guidelines
-3. Test thoroughly
-4. Update Swagger documentation
-5. Submit pull request
+```env
+NODE_ENV=production
+APP_PORT=3000
+DB_HOST=production-db-host
+DB_SSL=true
+LOG_LEVEL=warn
+```
+
+### Docker (Optional)
+
+```dockerfile
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production  
+COPY . .
+RUN npm run build
+EXPOSE 3000
+CMD ["node", "dist/server.js"]
+```
 
 ## 📄 License
 
-ISC
+MIT
 
+## 👥 Contributors
+
+- Development Team
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📞 Support
+
+For issues and questions, please open an issue on GitHub.
