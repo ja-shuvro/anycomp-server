@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { PlatformFeeController } from "../controllers/PlatformFeeController";
+import { PlatformFeeController } from "../controllers/platform-fee.controller";
 import { validateRequest } from "../middleware/validateRequest";
 import { CreatePlatformFeeDto } from "../dto/platform-fee/create-platform-fee.dto";
 import { UpdatePlatformFeeDto } from "../dto/platform-fee/update-platform-fee.dto";

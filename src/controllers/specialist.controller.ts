@@ -1,0 +1,91 @@
+import { Request, Response, NextFunction } from "express";
+import { SpecialistService } from "../services/specialist.service";
+import { successResponse, paginatedResponse } from "../utils/response.helper";
+import { parsePaginationParams, generatePaginationMeta } from "../utils/pagination.helper";
+import { CreateSpecialistDto } from "../dto/specialist/create-specialist.dto";
+import { UpdateSpecialistDto } from "../dto/specialist/update-specialist.dto";
+import { FilterSpecialistDto } from "../dto/specialist/filter-specialist.dto";
+import { plainToInstance } from "class-transformer";
+
+/**
+ * Specialist Controller
+ * Handles HTTP requests for specialist operations
+ * 
+ * @see ../swagger/paths/specialist.docs.ts for API documentation
+ */
+export class SpecialistController {
+    private service = new SpecialistService();
+
+    /**
+     * Get all specialists with filtering and pagination
+     */
+    async getAll(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { page, limit } = parsePaginationParams(req.query.page as string, req.query.limit as string);
+
+            // Transform query params to DTO
+            const filters = plainToInstance(FilterSpecialistDto, req.query);
+
+            const { items, total } = await this.service.findAll(filters, page, limit);
+
+            const pagination = generatePaginationMeta(page, limit, total);
+
+            return paginatedResponse(res, items, pagination, "Specialists retrieved successfully");
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /**
+     * Get specialist by ID
+     */
+    async getOne(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { id } = req.params;
+            const specialist = await this.service.findOne(id);
+            return successResponse(res, specialist, "Specialist retrieved successfully");
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /**
+     * Create new specialist
+     */
+    async create(req: Request, res: Response, next: NextFunction) {
+        try {
+            const dto: CreateSpecialistDto = req.body;
+            const specialist = await this.service.create(dto);
+            return successResponse(res, specialist, "Specialist created successfully", 201);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /**
+     * Update specialist
+     */
+    async update(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { id } = req.params;
+            const dto: UpdateSpecialistDto = req.body;
+            const specialist = await this.service.update(id, dto);
+            return successResponse(res, specialist, "Specialist updated successfully");
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /**
+     * Delete specialist
+     */
+    async delete(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { id } = req.params;
+            await this.service.delete(id);
+            return res.status(204).send();
+        } catch (error) {
+            next(error);
+        }
+    }
+}

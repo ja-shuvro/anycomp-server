@@ -1,6 +1,6 @@
 import request from "supertest";
 import express, { Application } from "express";
-import healthRoutes from "../healthRoutes";
+import healthRoutes from "../health.routes";
 
 describe("Health Routes", () => {
     let app: Application;

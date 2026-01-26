@@ -1,0 +1,229 @@
+import { AppDataSource } from "../data-source";
+import { Specialist, VerificationStatus } from "../entities/Specialist.entity";
+import { ServiceOffering } from "../entities/ServiceOffering.entity";
+import { ServiceOfferingsMasterList } from "../entities/ServiceOfferingsMasterList.entity";
+import { CreateSpecialistDto } from "../dto/specialist/create-specialist.dto";
+import { UpdateSpecialistDto } from "../dto/specialist/update-specialist.dto";
+import { FilterSpecialistDto } from "../dto/specialist/filter-specialist.dto";
+import { PlatformFeeService } from "./platform-fee.service";
+import { NotFoundError, BadRequestError } from "../errors/custom-errors";
+import { calculateOffset } from "../utils/pagination.helper";
+import logger from "../utils/logger";
+import { In } from "typeorm";
+
+export class SpecialistService {
+    private specialistRepo = AppDataSource.getRepository(Specialist);
+    private serviceOfferingRepo = AppDataSource.getRepository(ServiceOffering);
+    private platformFeeService = new PlatformFeeService();
+
+    /**
+     * Generate URL-friendly slug from title
+     */
+    private generateSlug(title: string): string {
+        return title
+            .toLowerCase()
+            .trim()
+            .replace(/[^\w\s-]/g, "")
+            .replace(/[\s_-]+/g, "-")
+            .replace(/^-+|-+$/g, "");
+    }
+
+    /**
+     * Ensure slug is unique
+     */
+    private async ensureUniqueSlug(slug: string, excludeId?: string): Promise<string> {
+        let uniqueSlug = slug;
+        let counter = 1;
+
+        while (true) {
+            const query = this.specialistRepo.createQueryBuilder("s")
+                .where("s.slug = :slug", { slug: uniqueSlug });
+
+            if (excludeId) {
+                query.andWhere("s.id != :id", { id: excludeId });
+            }
+
+            const existing = await query.getOne();
+
+            if (!existing) break;
+
+            uniqueSlug = `${slug}-${counter}`;
+            counter++;
+        }
+
+        return uniqueSlug;
+    }
+
+    /**
+     * Create new specialist
+     */
+    async create(dto: CreateSpecialistDto): Promise<Specialist> {
+        const queryRunner = AppDataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+
+        try {
+            // 1. Handle Slug
+            const baseSlug = dto.slug || this.generateSlug(dto.title);
+            const slug = await this.ensureUniqueSlug(baseSlug);
+
+            // 2. Calculate Prices
+            const feeData = await this.platformFeeService.calculateFee(dto.basePrice);
+            const platformFee = feeData.fee;
+            const finalPrice = dto.basePrice + platformFee;
+
+            // 3. Create Specialist
+            const specialist = this.specialistRepo.create({
+                ...dto,
+                slug,
+                platformFee,
+                finalPrice,
+                isDraft: true,
+                verificationStatus: VerificationStatus.PENDING,
+                isVerified: false
+            });
+
+            const savedSpecialist = await queryRunner.manager.save(specialist);
+
+            // 4. Handle Service Assignments (if any)
+            if (dto.serviceIds && dto.serviceIds.length > 0) {
+                await this.assignServicesTx(queryRunner, savedSpecialist.id, dto.serviceIds);
+            }
+
+            await queryRunner.commitTransaction();
+
+            // Return full object with relations
+            return this.findOne(savedSpecialist.id);
+        } catch (error) {
+            await queryRunner.rollbackTransaction();
+            logger.error("Error creating specialist:", error);
+            throw error;
+        } finally {
+            await queryRunner.release();
+        }
+    }
+
+    /**
+     * Helper to assign services within a transaction
+     */
+    private async assignServicesTx(queryRunner: any, specialistId: string, serviceIds: string[]) {
+        // Verify all service IDs exist
+        const masterServices = await queryRunner.manager
+            .getRepository(ServiceOfferingsMasterList)
+            .findBy({ id: In(serviceIds) });
+
+        if (masterServices.length !== serviceIds.length) {
+            throw new BadRequestError("One or more service IDs are invalid");
+        }
+
+        // Create junction records
+        const serviceOfferings = serviceIds.map(serviceId => {
+            return queryRunner.manager.getRepository(ServiceOffering).create({
+                specialists: specialistId,
+                serviceOfferingsMasterListId: serviceId
+            });
+        });
+
+        await queryRunner.manager.save(serviceOfferings);
+    }
+
+    /**
+     * Find one specialist with full details
+     */
+    async findOne(id: string): Promise<Specialist> {
+        const specialist = await this.specialistRepo.findOne({
+            where: { id },
+            relations: ["serviceOfferings", "serviceOfferings.serviceOfferingsMasterList", "media"]
+        });
+
+        if (!specialist) {
+            throw new NotFoundError("Specialist not found");
+        }
+
+        return specialist;
+    }
+
+    /**
+     * Find all with filtering and pagination
+     */
+    async findAll(
+        filters: FilterSpecialistDto,
+        page: number = 1,
+        limit: number = 10
+    ): Promise<{ items: Specialist[]; total: number }> {
+        const query = this.specialistRepo.createQueryBuilder("s")
+            .leftJoinAndSelect("s.serviceOfferings", "so")
+            .leftJoinAndSelect("so.serviceOfferingsMasterList", "soml")
+            .leftJoinAndSelect("s.media", "m");
+
+        // Apply filters
+        if (filters.search) {
+            query.andWhere(
+                "(s.title ILIKE :search OR s.description ILIKE :search OR soml.title ILIKE :search)",
+                { search: `%${filters.search}%` }
+            );
+        }
+
+        if (filters.status) {
+            query.andWhere("s.verificationStatus = :status", { status: filters.status });
+        }
+
+        if (filters.isDraft !== undefined) {
+            query.andWhere("s.isDraft = :isDraft", { isDraft: filters.isDraft });
+        }
+
+        if (filters.minPrice) {
+            query.andWhere("s.basePrice >= :minPrice", { minPrice: filters.minPrice });
+        }
+
+        if (filters.maxPrice) {
+            query.andWhere("s.basePrice <= :maxPrice", { maxPrice: filters.maxPrice });
+        }
+
+        if (filters.minRating) {
+            query.andWhere("s.averageRating >= :minRating", { minRating: filters.minRating });
+        }
+
+        // Pagination
+        const skip = calculateOffset(page, limit);
+        query.skip(skip).take(limit);
+        query.orderBy("s.createdAt", "DESC");
+
+        const [items, total] = await query.getManyAndCount();
+
+        return { items, total };
+    }
+
+    /**
+     * Update specialist
+     */
+    async update(id: string, dto: UpdateSpecialistDto): Promise<Specialist> {
+        const specialist = await this.findOne(id);
+
+        // Check slug uniqueness if changed
+        if (dto.slug && dto.slug !== specialist.slug) {
+            dto.slug = await this.ensureUniqueSlug(dto.slug, id);
+        }
+
+        // Recalculate price if basePrice changed
+        if (dto.basePrice !== undefined && dto.basePrice !== specialist.basePrice) {
+            const feeData = await this.platformFeeService.calculateFee(dto.basePrice);
+            specialist.platformFee = feeData.fee;
+            specialist.finalPrice = dto.basePrice + feeData.fee;
+        }
+
+        Object.assign(specialist, dto);
+
+        return await this.specialistRepo.save(specialist);
+    }
+
+    /**
+     * Delete specialist (soft delete)
+     */
+    async delete(id: string): Promise<void> {
+        const result = await this.specialistRepo.softDelete(id);
+        if (result.affected === 0) {
+            throw new NotFoundError("Specialist not found");
+        }
+    }
+}

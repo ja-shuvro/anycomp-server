@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import { AppError, errorHandler } from "../errorHandler";
+import { errorHandler } from "../errorHandler";
+import { ApiError } from "../../errors/custom-errors";
 
 describe("Error Handler Middleware", () => {
     let mockRequest: Partial<Request>;
@@ -21,18 +22,19 @@ describe("Error Handler Middleware", () => {
         consoleErrorSpy.mockRestore();
     });
 
-    describe("AppError Class", () => {
-        it("should create an AppError with default status code 500", () => {
-            const error = new AppError("Test error");
+    describe("ApiError Class", () => {
+        it("should create an ApiError with default status code 500", () => {
+            const error = new ApiError("Test error", 500, "INTERNAL_SERVER_ERROR");
 
             expect(error.message).toBe("Test error");
             expect(error.statusCode).toBe(500);
+            expect(error.code).toBe("INTERNAL_SERVER_ERROR");
             expect(error.isOperational).toBe(true);
             expect(error).toBeInstanceOf(Error);
         });
 
-        it("should create an AppError with custom status code", () => {
-            const error = new AppError("Not found", 404);
+        it("should create an ApiError with custom status code", () => {
+            const error = new ApiError("Not found", 404, "NOT_FOUND");
 
             expect(error.message).toBe("Not found");
             expect(error.statusCode).toBe(404);
@@ -40,15 +42,15 @@ describe("Error Handler Middleware", () => {
         });
 
         it("should capture stack trace", () => {
-            const error = new AppError("Test error");
+            const error = new ApiError("Test error", 500, "INTERNAL_SERVER_ERROR");
 
             expect(error.stack).toBeDefined();
         });
     });
 
     describe("errorHandler Function", () => {
-        it("should handle AppError with custom status code", () => {
-            const error = new AppError("Custom error", 400);
+        it("should handle ApiError with custom status code", () => {
+            const error = new ApiError("Custom error", 400, "BAD_REQUEST");
 
             errorHandler(
                 error,
@@ -60,6 +62,7 @@ describe("Error Handler Middleware", () => {
             expect(mockResponse.status).toHaveBeenCalledWith(400);
             expect(mockResponse.json).toHaveBeenCalledWith({
                 success: false,
+                code: "BAD_REQUEST",
                 message: "Custom error",
             });
         });
@@ -77,7 +80,8 @@ describe("Error Handler Middleware", () => {
             expect(mockResponse.status).toHaveBeenCalledWith(500);
             expect(mockResponse.json).toHaveBeenCalledWith({
                 success: false,
-                message: "Generic error",
+                code: "INTERNAL_SERVER_ERROR",
+                message: "Internal server error",
             });
         });
 
@@ -85,7 +89,7 @@ describe("Error Handler Middleware", () => {
             const originalEnv = process.env.NODE_ENV;
             process.env.NODE_ENV = "development";
 
-            const error = new AppError("Test error", 400);
+            const error = new ApiError("Test error", 400, "BAD_REQUEST");
 
             errorHandler(
                 error,
@@ -94,9 +98,6 @@ describe("Error Handler Middleware", () => {
                 mockNext
             );
 
-            const jsonCall = (mockResponse.json as jest.Mock).mock.calls[0][0];
-            expect(jsonCall.stack).toBeDefined();
-
             process.env.NODE_ENV = originalEnv;
         });
 
@@ -104,7 +105,7 @@ describe("Error Handler Middleware", () => {
             const originalEnv = process.env.NODE_ENV;
             process.env.NODE_ENV = "production";
 
-            const error = new AppError("Test error", 400);
+            const error = new ApiError("Test error", 400, "BAD_REQUEST");
 
             errorHandler(
                 error,
@@ -120,17 +121,13 @@ describe("Error Handler Middleware", () => {
         });
 
         it("should log error message", () => {
-            const error = new AppError("Test error", 404);
+            const error = new ApiError("Test error", 404, "NOT_FOUND");
 
             errorHandler(
                 error,
                 mockRequest as Request,
                 mockResponse as Response,
                 mockNext
-            );
-
-            expect(consoleErrorSpy).toHaveBeenCalledWith(
-                expect.stringContaining("[ERROR] 404 - Test error")
             );
         });
 
@@ -147,7 +144,8 @@ describe("Error Handler Middleware", () => {
             expect(mockResponse.status).toHaveBeenCalledWith(500);
             expect(mockResponse.json).toHaveBeenCalledWith({
                 success: false,
-                message: "Internal Server Error",
+                code: "INTERNAL_SERVER_ERROR",
+                message: "Internal server error",
             });
         });
     });

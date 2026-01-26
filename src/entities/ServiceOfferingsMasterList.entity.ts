@@ -30,6 +30,12 @@ export class ServiceOfferingsMasterList {
     @IsNotEmpty()
     description: string;
 
+    @Index("idx_service_offerings_service_id", { unique: true })
+    @Column({ type: "varchar", length: 100, name: "service_id" })
+    @IsString()
+    @IsNotEmpty()
+    serviceId: string;
+
     @Column({ type: "varchar", length: 500, nullable: true, name: "s3_key" })
     @IsString()
     @IsOptional()

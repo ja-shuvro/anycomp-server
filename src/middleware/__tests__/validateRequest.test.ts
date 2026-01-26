@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { validateRequest } from "../validateRequest";
 import { IsString, IsEmail, MinLength } from "class-validator";
-import { AppError } from "../errorHandler";
+import { ApiError } from "../../errors/custom-errors";
 
 // Sample DTO for testing
 class TestDTO {
