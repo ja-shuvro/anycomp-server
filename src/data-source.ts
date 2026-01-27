@@ -23,8 +23,9 @@ export const AppDataSource = new DataSource({
     migrations: ["src/migrations/**/*.ts"],
     subscribers: ["src/subscribers/**/*.ts"],
     // SSL configuration for cloud databases (Supabase, AWS RDS, etc.)
+    // SSL configuration for cloud databases (Supabase, AWS RDS, etc.)
     ssl:
-        process.env.DB_SSL === "true"
+        (process.env.DB_SSL === "true" || process.env.NODE_ENV === "production")
             ? {
                 rejectUnauthorized: false,
             }
