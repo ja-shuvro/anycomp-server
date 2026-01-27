@@ -149,7 +149,21 @@ const swaggerSpec = swaggerJsdoc(options);
  */
 export const setupSwagger = (app: Application): void => {
     // Swagger UI
-    app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+    const CSS_URL = "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.0.0/swagger-ui.min.css";
+    const JS_URL = [
+        "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.0.0/swagger-ui-bundle.min.js",
+        "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.0.0/swagger-ui-standalone-preset.min.js",
+    ];
+
+    app.use(
+        "/api-docs",
+        swaggerUi.serve,
+        swaggerUi.setup(swaggerSpec, {
+            customCssUrl: CSS_URL,
+            customJs: JS_URL,
+            customSiteTitle: "Anycomp API Docs",
+        })
+    );
 
     // Swagger JSON
     app.get("/api-docs.json", (req, res) => {
