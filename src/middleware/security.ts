@@ -16,6 +16,7 @@ export const securityMiddleware = helmet({
             ],
             imgSrc: ["'self'", "data:", "https:"],
             frameSrc: ["'self'", "https://vercel.live"],
+            connectSrc: ["'self'", "https://vercel.live", "wss://*.pusher.com"],
         },
     },
     crossOriginEmbedderPolicy: false,
