@@ -37,25 +37,32 @@ const format = winston.format.combine(
 );
 
 // Define log transports
-const transports = [
-    // Console transport
+const transports: winston.transport[] = [
+    // Console transport (Always enabled)
     new winston.transports.Console(),
-
-    // All logs file transport
-    new winston.transports.File({
-        filename: path.join(process.env.LOG_FILE_PATH || "./logs", "all.log"),
-        maxsize: 5242880, // 5MB
-        maxFiles: 5,
-    }),
-
-    // Error logs file transport
-    new winston.transports.File({
-        filename: path.join(process.env.LOG_FILE_PATH || "./logs", "error.log"),
-        level: "error",
-        maxsize: 5242880, // 5MB
-        maxFiles: 5,
-    }),
 ];
+
+// Only add file transports if NOT running on Vercel
+// Vercel file system is read-only, so writing logs to file will prevent startup
+if (!process.env.VERCEL) {
+    transports.push(
+        // All logs file transport
+        new winston.transports.File({
+            filename: path.join(process.env.LOG_FILE_PATH || "./logs", "all.log"),
+            maxsize: 5242880, // 5MB
+            maxFiles: 5,
+        })
+    );
+    transports.push(
+        // Error logs file transport
+        new winston.transports.File({
+            filename: path.join(process.env.LOG_FILE_PATH || "./logs", "error.log"),
+            level: "error",
+            maxsize: 5242880, // 5MB
+            maxFiles: 5,
+        })
+    );
+}
 
 // Create the logger
 const logger = winston.createLogger({
