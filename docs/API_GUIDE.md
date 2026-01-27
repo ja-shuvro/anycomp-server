@@ -5,36 +5,84 @@ Complete guide to using the Anycomp Server API.
 ## Base URL
 
 ```
-http://localhost:3000/api/v1
+https://anycomp-server.vercel.app/api/v1
 ```
 
 ## Authentication
 
-*Currently, the API does not require authentication. This will be added in future versions.*
+### Register User
 
-## Response Format
+**Endpoint:** `POST /auth/register`
 
-All API responses follow a consistent structure:
+**Request Body:**
+```json
+{
+  "email": "user@example.com",
+  "password": "password123",
+  "role": "SPECIALIST" 
+}
+```
+*Note: `role` can be `ADMIN` or `SPECIALIST`.*
 
-### Success Response
+**Response:**
 ```json
 {
   "success": true,
-  "data": { ... },
-  "message": "Operation successful"
+  "data": {
+    "id": "user-uuid",
+    "email": "user@example.com",
+    "role": "SPECIALIST",
+    "createdAt": "2026-01-26T10:00:00.000Z"
+  },
+  "message": "User registered successfully"
 }
 ```
 
-### Error Response
+### Login
+
+**Endpoint:** `POST /auth/login`
+
+**Request Body:**
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "ERROR_CODE",
-    "message": "Human-readable error message",
-    "statusCode": 400,
-    "timestamp": "2026-01-26T10:00:00.000Z",
-    "path": "/api/v1/endpoint"
+  "email": "user@example.com",
+  "password": "password123"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "token": "jwt.token.here",
+    "user": {
+      "id": "user-uuid",
+      "email": "user@example.com",
+      "role": "SPECIALIST",
+      "createdAt": "2026-01-26T10:00:00.000Z"
+    }
+  },
+  "message": "Login successful"
+}
+```
+
+### Get Current User (Me)
+
+**Endpoint:** `GET /auth/me`
+
+**Headers:**
+- `Authorization: Bearer <token>`
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "user-uuid",
+    "email": "user@example.com",
+    "role": "SPECIALIST",
+    "createdAt": "2026-01-26T10:00:00.000Z"
   }
 }
 ```
@@ -43,9 +91,12 @@ All API responses follow a consistent structure:
 
 ## Specialists API
 
-### Create Specialist
+### Create Specialist (Authenticated)
 
 **Endpoint:** `POST /specialists`
+
+**Headers:**
+- `Authorization: Bearer <token>`
 
 **Request Body:**
 ```json
@@ -54,6 +105,7 @@ All API responses follow a consistent structure:
   "description": "Expert in tax filing and financial planning",
   "basePrice": 5000,
   "durationDays": 7,
+  "slug": "professional-accountant",
   "serviceIds": ["service-uuid-1", "service-uuid-2"]
 }
 ```
@@ -68,49 +120,42 @@ All API responses follow a consistent structure:
     "slug": "professional-accountant",
     "isDraft": true,
     "verificationStatus": "pending",
-    "platformFee": "425.00",
-    "finalPrice": "5425.00",
+    "platformFee": 425.00,
+    "finalPrice": 5425.00,
     ...
   }
 }
 ```
 
-### List Specialists with Filters
+### List Specialists
 
 **Endpoint:** `GET /specialists`
 
 **Query Parameters:**
-- `search` - Search in title/description
-- `status` - Filter by verification status (`pending`, `verified`, `rejected`)
-- `isDraft` - Filter by draft status (`true`, `false`)
-- `minPrice` / `maxPrice` - Price range filter
-- `minRating` - Minimum rating filter
-- `sortBy` - Sort field (`price`, `rating`, `alphabetical`, `newest`)
-- `sortOrder` - Sort direction (`asc`, `desc`)
-- `page` / `limit` - Pagination
-
-**Examples:**
-
-```bash
-# Get published specialists
-GET /specialists?isDraft=false
-
-# Search and filter by price
-GET /specialists?search=accountant&minPrice=3000&maxPrice=10000
-
-# Sort by rating (highest first)
-GET /specialists?sortBy=rating&sortOrder=desc
-
-# Pagination
-GET /specialists?page=2&limit=20
-```
+- `search`: Search term for title/description
+- `status`: `pending`, `verified`, `rejected`
+- `isDraft`: `true`, `false`
+- `minPrice`: Filter by minimum base price
+- `maxPrice`: Filter by maximum base price
+- `minRating`: Filter by minimum average rating
+- `sortBy`: `price`, `rating`, `newest`, `alphabetical`
+- `sortOrder`: `asc`, `desc` (default: `desc`)
+- `page`: Page number (default: 1)
+- `limit`: Items per page (default: 10)
 
 **Response:**
 ```json
 {
   "success": true,
   "data": {
-    "items": [ ... ],
+    "items": [
+        {
+            "id": "specialist-uuid",
+            "title": "Accountant",
+            "basePrice": 5000,
+            ...
+        }
+    ],
     "pagination": {
       "currentPage": 1,
       "totalPages": 5,
@@ -123,15 +168,52 @@ GET /specialists?page=2&limit=20
 }
 ```
 
-### Publish Specialist
+### Get Specialist by ID
+
+**Endpoint:** `GET /specialists/:id`
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "specialist-uuid",
+    "title": "Professional Accountant",
+    ...
+    "serviceOfferings": [ ... ]
+  }
+}
+```
+
+### Update Specialist (Owner/Admin)
+
+**Endpoint:** `PATCH /specialists/:id`
+
+**Headers:**
+- `Authorization: Bearer <token>`
+
+**Request Body:**
+```json
+{
+  "title": "Updated Title",
+  "basePrice": 6000
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": { ... } // Updated specialist object
+}
+```
+
+### Publish Specialist (Owner/Admin)
 
 **Endpoint:** `PATCH /specialists/:id/publish`
 
-**Requirements:**
-- All required fields must be filled
-- At least one service offering
-- Not in "rejected" status
-- Currently in draft mode
+**Headers:**
+- `Authorization: Bearer <token>`
 
 **Response:**
 ```json
@@ -146,52 +228,31 @@ GET /specialists?page=2&limit=20
 }
 ```
 
-**Error Cases:**
-```json
-{
-  "error": {
-    "message": "Specialist must have at least one service to be published"
-  }
-}
-```
+### Delete Specialist (Owner/Admin)
+
+**Endpoint:** `DELETE /specialists/:id`
+
+**Headers:**
+- `Authorization: Bearer <token>`
+
+**Response:** `204 No Content`
 
 ---
 
 ## Media API
 
-### Upload File
+### Upload File (Authenticated)
 
 **Endpoint:** `POST /media/upload`
 
-**Content-Type:** `multipart/form-data`
+**Headers:**
+- `Authorization: Bearer <token>`
+- `Content-Type: multipart/form-data`
 
 **Form Fields:**
-- `file` (required) - The file to upload
-- `specialistId` (required) - UUID of the specialist
-- `displayOrder` (optional) - Integer for ordering (auto-incremented if not provided)
-
-**cURL Example:**
-```bash
-curl -X POST http://localhost:3000/api/v1/media/upload \
-  -F "file=@/path/to/image.jpg" \
-  -F "specialistId=uuid-here" \
-  -F "displayOrder=0"
-```
-
-**JavaScript Example:**
-```javascript
-const formData = new FormData();
-formData.append('file', fileInput.files[0]);
-formData.append('specialistId', 'specialist-uuid');
-formData.append('displayOrder', '0');
-
-fetch('http://localhost:3000/api/v1/media/upload', {
-  method: 'POST',
-  body: formData
-})
-.then(res => res.json())
-.then(data => console.log(data));
-```
+- `file` (required): File to upload
+- `specialistId` (required): UUID of the specialist
+- `displayOrder` (optional): Integer
 
 **Response:**
 ```json
@@ -199,23 +260,12 @@ fetch('http://localhost:3000/api/v1/media/upload', {
   "success": true,
   "data": {
     "id": "media-uuid",
-    "specialists": "specialist-uuid",
-    "fileName": "1769416568637-882061989.png",
-    "fileSize": 1024567,
-    "displayOrder": 0,
-    "mimeType": "image/png",
-    "mediaType": "image",
-    "publicUrl": "/uploads/1769416568637-882061989.png",
-    "uploadedAt": "2026-01-26T10:00:00.000Z"
-  },
-  "message": "Media uploaded successfully"
+    "fileName": "file.png",
+    "publicUrl": "/uploads/file.png",
+    ...
+  }
 }
 ```
-
-**Allowed File Types:**
-- **Images:** `.jpg`, `.jpeg`, `.png`, `.webp` (max 5MB)
-- **Videos:** `.mp4` (max 10MB)
-- **Documents:** `.pdf` (max 5MB)
 
 ### List Media for Specialist
 
@@ -227,41 +277,25 @@ fetch('http://localhost:3000/api/v1/media/upload', {
   "success": true,
   "data": [
     {
-      "id": "media-uuid-1",
-      "fileName": "image1.jpg",
-      "displayOrder": 0,
-      "publicUrl": "/uploads/image1.jpg"
-    },
-    {
-      "id": "media-uuid-2",
-      "fileName": "image2.jpg",
-      "displayOrder": 1,
-      "publicUrl": "/uploads/image2.jpg"
+      "id": "media-uuid",
+      "publicUrl": "/uploads/file.png",
+      "displayOrder": 0
     }
   ]
 }
 ```
 
-### Delete Media
+### Reorder Media (Owner Only)
 
-**Endpoint:** `DELETE /media/:id`
+**Endpoint:** `PATCH /media/:id/reorder`
 
-**Response:** `204 No Content`
-
-*Note: This performs a soft delete and also removes the physical file.*
-
----
-
-## Platform Fees API
-
-### Calculate Fee
-
-**Endpoint:** `POST /platform-fees/calculate`
+**Headers:**
+- `Authorization: Bearer <token>`
 
 **Request Body:**
 ```json
 {
-  "amount": 12000
+  "displayOrder": 2
 }
 ```
 
@@ -269,41 +303,134 @@ fetch('http://localhost:3000/api/v1/media/upload', {
 ```json
 {
   "success": true,
+  "data": { ... } // Updated media object
+}
+```
+
+### Delete Media (Owner Only)
+
+**Endpoint:** `DELETE /media/:id`
+
+**Headers:**
+- `Authorization: Bearer <token>`
+
+**Response:** `204 No Content`
+
+---
+
+## Service Offerings API (Admin Only)
+
+### List All Services
+
+**Endpoint:** `GET /service-offerings`
+
+**Headers:**
+- `Authorization: Bearer <token>`
+
+**Response:**
+```json
+{
+  "success": true,
   "data": {
-    "baseAmount": 12000,
-    "platformFee": 800,
-    "finalAmount": 12800,
-    "breakdown": [
-      {
-        "tier": "Tier 1 (0-5000)",
-        "amount": 5000,
-        "percentage": 5,
-        "fee": 250
-      },
-      {
-        "tier": "Tier 2 (5001-10000)",
-        "amount": 5000,
-        "percentage": 7,
-        "fee": 350
-      },
-      {
-        "tier": "Tier 3 (10001-20000)",
-        "amount": 2000,
-        "percentage": 10,
-        "fee": 200
-      }
-    ]
+    "items": [
+        {
+          "id": "uuid",
+          "title": "Tax Filing",
+          "serviceId": "service_001"
+        }
+    ],
+    "pagination": { ... }
   }
 }
 ```
+
+### Create Service
+
+**Endpoint:** `POST /service-offerings`
+
+**Headers:**
+- `Authorization: Bearer <token>`
+
+**Request Body:**
+```json
+{
+  "title": "Legal Consultation",
+  "description": "Professional legal advice",
+  "serviceId": "service_010",
+  "s3Key": "icons/legal.png",
+  "bucketName": "anycomp-assets"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": { ... }
+}
+```
+
+### Get Service by ID
+
+**Endpoint:** `GET /service-offerings/:id`
+
+**Headers:**
+- `Authorization: Bearer <token>`
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": { ... }
+}
+```
+
+### Update Service
+
+**Endpoint:** `PATCH /service-offerings/:id`
+
+**Headers:**
+- `Authorization: Bearer <token>`
+
+**Request Body:**
+```json
+{
+  "title": "Updated Title",
+  "description": "Updated description"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": { ... }
+}
+```
+
+### Delete Service
+
+**Endpoint:** `DELETE /service-offerings/:id`
+
+**Headers:**
+- `Authorization: Bearer <token>`
+
+**Response:** `204 No Content`
+
+---
+
+## Platform Fees API (Admin Only)
 
 ### List Fee Tiers
 
 **Endpoint:** `GET /platform-fees`
 
+**Headers:**
+- `Authorization: Bearer <token>`
+
 **Query Parameters:**
-- `page` - Page number (default: 1)
-- `limit` - Items per page (default: 10)
+- `page`: Page number
+- `limit`: Items per page
 
 **Response:**
 ```json
@@ -324,41 +451,77 @@ fetch('http://localhost:3000/api/v1/media/upload', {
 }
 ```
 
----
+### Create Fee Tier
 
-##Service Offerings API
+**Endpoint:** `POST /platform-fees`
 
-### List All Services
+**Headers:**
+- `Authorization: Bearer <token>`
 
-**Endpoint:** `GET /service-offerings`
+**Request Body:**
+```json
+{
+  "tierName": "premium",
+  "minValue": 15000,
+  "maxValue": 50000,
+  "platformFeePercentage": 4.5
+}
+```
 
 **Response:**
 ```json
 {
   "success": true,
-  "data": [
-    {
-      "id": "uuid",
-      "title": "Tax Filing",
-      "description": "Complete tax preparation and filing services",
-      "serviceId": "service_001"
-    }
-  ]
+  "data": { ... }
 }
 ```
 
-### Create Service
+### Get Fee Tier by ID
 
-**Endpoint:** `POST /service-offerings`
+**Endpoint:** `GET /platform-fees/:id`
+
+**Headers:**
+- `Authorization: Bearer <token>`
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": { ... }
+}
+```
+
+### Update Fee Tier
+
+**Endpoint:** `PATCH /platform-fees/:id`
+
+**Headers:**
+- `Authorization: Bearer <token>`
 
 **Request Body:**
 ```json
 {
-  "title": "Legal Consultation",
-  "description": "Professional legal advice",
-  "serviceId": "service_010"
+  "minValue": 20000,
+  "platformFeePercentage": 4.0
 }
 ```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": { ... }
+}
+```
+
+### Delete Fee Tier
+
+**Endpoint:** `DELETE /platform-fees/:id`
+
+**Headers:**
+- `Authorization: Bearer <token>`
+
+**Response:** `204 No Content`
 
 ---
 
@@ -381,11 +544,6 @@ fetch('http://localhost:3000/api/v1/media/upload', {
 }
 ```
 
-**Use Cases:**
-- Load balancer health checks
-- Monitoring systems
-- Debugging connection issues
-
 ---
 
 ## Error Codes
@@ -397,70 +555,7 @@ fetch('http://localhost:3000/api/v1/media/upload', {
 | `NOT_FOUND` | 404 | Resource not found |
 | `CONFLICT` | 409 | Resource conflict (e.g., duplicate) |
 | `INTERNAL_SERVER_ERROR` | 500 | Server error |
-
----
-
-## Pagination
-
-All list endpoints support pagination:
-
-**Query Parameters:**
-- `page` - Page number (starts at 1)
-- `limit` - Items per page (default: 10, max: 100)
-
-**Pagination Metadata:**
-```json
-{
-  "pagination": {
-    "currentPage": 2,
-    "totalPages": 10,
-    "totalItems": 95,
-    "itemsPerPage": 10,
-    "hasNextPage": true,
-    "hasPrevPage": true
-  }
-}
-```
-
----
-
-## Rate Limiting
-
-The API implements rate limiting to prevent abuse:
-- **Limit:** 100 requests per 15 minutes per IP
-- **Response on limit exceeded:** `429 Too Many Requests`
-
-```json
-{
-  "success": false,
-  "error": {
-    "code": "RATE_LIMIT_EXCEEDED",
-    "message": "Too many requests, please try again later"
-  }
-}
-```
-
----
-
-## Testing with cURL
-
-```bash
-# Health check
-curl http://localhost:3000/api/v1/health
-
-# List specialists
-curl "http://localhost:3000/api/v1/specialists?page=1&limit=5"
-
-# Create specialist
-curl -X POST http://localhost:3000/api/v1/specialists \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Test","description":"Test desc","basePrice":1000,"durationDays":5}'
-
-# Upload image
-curl -X POST http://localhost:3000/api/v1/media/upload \
-  -F "file=@image.jpg" \
-  -F "specialistId=uuid-here"
-```
+| `RATE_LIMIT_EXCEEDED` | 429 | Too many requests |
 
 ---
 
@@ -468,10 +563,10 @@ curl -X POST http://localhost:3000/api/v1/media/upload \
 
 For a more interactive experience, visit the Swagger UI:
 
-**URL:** `http://localhost:3000/api-docs`
+**URL:** `https://anycomp-server.vercel.app/api-docs`
 
 Features:
 - Try out endpoints directly in the browser
 - See request/response examples
 - View schema definitions
-- Test authentication (when implemented)
+- Test authentication
