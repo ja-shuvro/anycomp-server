@@ -44,6 +44,7 @@ export class MediaController {
             const media = await this.service.upload(
                 dto.specialistId,
                 req.file,
+                req.user,
                 dto.displayOrder
             );
 
@@ -59,7 +60,7 @@ export class MediaController {
     async delete(req: Request, res: Response, next: NextFunction) {
         try {
             const { id } = req.params;
-            await this.service.delete(id);
+            await this.service.delete(id, req.user);
             return res.status(204).send();
         } catch (error) {
             next(error);
@@ -86,7 +87,7 @@ export class MediaController {
         try {
             const { id } = req.params;
             const { displayOrder } = req.body;
-            const media = await this.service.reorder(id, displayOrder);
+            const media = await this.service.reorder(id, displayOrder, req.user);
             return successResponse(res, media, "Display order updated successfully");
         } catch (error) {
             next(error);

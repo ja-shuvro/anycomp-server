@@ -3,6 +3,10 @@ import { SpecialistController } from "../controllers/specialist.controller";
 import { validateRequest } from "../middleware/validateRequest";
 import { CreateSpecialistDto } from "../dto/specialist/create-specialist.dto";
 import { UpdateSpecialistDto } from "../dto/specialist/update-specialist.dto";
+import { authMiddleware } from "../middleware/auth.middleware";
+import { roleMiddleware } from "../middleware/role.middleware";
+import { UserRole } from "../entities/User.entity";
+import { ownershipMiddleware } from "../middleware/ownership.middleware";
 
 const router = Router();
 const controller = new SpecialistController();
@@ -20,6 +24,8 @@ router.get("/specialists/:id", controller.getOne.bind(controller));
 // POST /specialists - Create new specialist
 router.post(
     "/specialists",
+    authMiddleware,
+    roleMiddleware([UserRole.ADMIN, UserRole.SPECIALIST]),
     validateRequest(CreateSpecialistDto),
     controller.create.bind(controller)
 );
@@ -27,14 +33,26 @@ router.post(
 // PATCH /specialists/:id - Update specialist
 router.patch(
     "/specialists/:id",
+    authMiddleware,
+    ownershipMiddleware("specialist"),
     validateRequest(UpdateSpecialistDto),
     controller.update.bind(controller)
 );
 
 // PATCH /specialists/:id/publish - Publish specialist
-router.patch("/specialists/:id/publish", controller.publish.bind(controller));
+router.patch(
+    "/specialists/:id/publish",
+    authMiddleware,
+    ownershipMiddleware("specialist"),
+    controller.publish.bind(controller)
+);
 
 // DELETE /specialists/:id - Delete specialist
-router.delete("/specialists/:id", controller.delete.bind(controller));
+router.delete(
+    "/specialists/:id",
+    authMiddleware,
+    ownershipMiddleware("specialist"),
+    controller.delete.bind(controller)
+);
 
 export default router;

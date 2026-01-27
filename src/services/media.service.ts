@@ -1,7 +1,8 @@
 import { AppDataSource } from "../data-source";
 import { Media, MimeType, MediaType } from "../entities/Media.entity";
 import { Specialist } from "../entities/Specialist.entity";
-import { NotFoundError } from "../errors/custom-errors";
+import { NotFoundError, ForbiddenError, UnauthorizedError } from "../errors/custom-errors";
+import { UserRole } from "../entities/User.entity";
 import logger from "../utils/logger";
 import fs from "fs";
 import path from "path";
@@ -9,6 +10,19 @@ import path from "path";
 export class MediaService {
     private mediaRepo = AppDataSource.getRepository(Media);
     private specialistRepo = AppDataSource.getRepository(Specialist);
+
+    /**
+     * Check if user is owner or admin
+     */
+    private async checkSpecialistOwnership(specialistId: string, user?: any) {
+        if (!user) throw new UnauthorizedError("Authentication required");
+        if (user.role === UserRole.ADMIN) return;
+
+        const specialist = await this.specialistRepo.findOne({ where: { id: specialistId } });
+        if (!specialist || specialist.userId !== user.id) {
+            throw new ForbiddenError("You do not have permission to manage media for this specialist");
+        }
+    }
 
     /**
      * Map MIME type to MediaType enum
@@ -41,8 +55,10 @@ export class MediaService {
     async upload(
         specialistId: string,
         file: Express.Multer.File,
+        user?: any,
         displayOrder?: number
     ): Promise<Media> {
+        await this.checkSpecialistOwnership(specialistId, user);
         // Verify specialist exists
         const specialist = await this.specialistRepo.findOne({ where: { id: specialistId } });
         if (!specialist) {
@@ -82,8 +98,13 @@ export class MediaService {
     /**
      * Delete media (soft delete + file removal)
      */
-    async delete(id: string): Promise<void> {
+    async delete(id: string, user?: any): Promise<void> {
         const media = await this.mediaRepo.findOne({ where: { id } });
+        if (!media) {
+            throw new NotFoundError("Media not found");
+        }
+
+        await this.checkSpecialistOwnership(media.specialists, user);
         if (!media) {
             throw new NotFoundError("Media not found");
         }
@@ -113,8 +134,13 @@ export class MediaService {
     /**
      * Update display order
      */
-    async reorder(id: string, newOrder: number): Promise<Media> {
+    async reorder(id: string, newOrder: number, user?: any): Promise<Media> {
         const media = await this.mediaRepo.findOne({ where: { id } });
+        if (!media) {
+            throw new NotFoundError("Media not found");
+        }
+
+        await this.checkSpecialistOwnership(media.specialists, user);
         if (!media) {
             throw new NotFoundError("Media not found");
         }

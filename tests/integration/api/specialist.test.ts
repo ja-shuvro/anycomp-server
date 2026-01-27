@@ -3,6 +3,7 @@ import { Specialist, VerificationStatus } from "../../../src/entities/Specialist
 import { PlatformFee, TierName } from "../../../src/entities/PlatformFee.entity";
 import { AppDataSource } from "../../../src/data-source";
 import { app } from "../../../src/server";
+import { User, UserRole } from "../../../src/entities/User.entity";
 
 describe("Specialist API Integration", () => {
     beforeAll(async () => {
@@ -17,11 +18,26 @@ describe("Specialist API Integration", () => {
         }
     });
 
+    let authToken: string;
+    let userId: string;
+
     beforeEach(async () => {
         await AppDataSource.query('DELETE FROM service_offerings');
         await AppDataSource.query('DELETE FROM media');
         await AppDataSource.query('DELETE FROM specialists');
         await AppDataSource.query('DELETE FROM platform_fee');
+        await AppDataSource.query('DELETE FROM users');
+
+        // Setup user for authenticated requests
+        const regRes = await request(app).post("/api/v1/auth/register").send({
+            email: "specialist@example.com", password: "password123", role: UserRole.SPECIALIST
+        });
+        userId = regRes.body.data.id;
+
+        const loginRes = await request(app).post("/api/v1/auth/login").send({
+            email: "specialist@example.com", password: "password123"
+        });
+        authToken = loginRes.body.data.token;
 
         const pfRepo = AppDataSource.getRepository(PlatformFee);
         await pfRepo.save(pfRepo.create({
@@ -43,6 +59,7 @@ describe("Specialist API Integration", () => {
 
             const response = await request(app)
                 .post("/api/v1/specialists")
+                .set("Authorization", `Bearer ${authToken}`)
                 .send(payload);
 
             expect(response.status).toBe(201);
@@ -96,11 +113,12 @@ describe("Specialist API Integration", () => {
             const saved = await repo.save(repo.create({
                 title: "Old", description: "Bio 1 0123456789",
                 basePrice: 100, isDraft: true, durationDays: 1,
-                platformFee: 5, slug: "old-slug"
+                platformFee: 5, slug: "old-slug", userId: userId
             }));
 
             const response = await request(app)
                 .patch(`/api/v1/specialists/${saved.id}`)
+                .set("Authorization", `Bearer ${authToken}`)
                 .send({ title: "New Title" });
 
             expect(response.status).toBe(200);
@@ -114,10 +132,12 @@ describe("Specialist API Integration", () => {
             const saved = await repo.save(repo.create({
                 title: "T1", description: "Bio 1 0123456789",
                 basePrice: 100, isDraft: true, durationDays: 1,
-                platformFee: 5, slug: "t1-slug"
+                platformFee: 5, slug: "t1-slug", userId: userId
             }));
 
-            const response = await request(app).delete(`/api/v1/specialists/${saved.id}`);
+            const response = await request(app)
+                .delete(`/api/v1/specialists/${saved.id}`)
+                .set("Authorization", `Bearer ${authToken}`);
 
             expect(response.status).toBe(204);
 

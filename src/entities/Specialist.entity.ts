@@ -10,6 +10,8 @@ import {
     BeforeInsert,
     BeforeUpdate,
     Check,
+    ManyToOne,
+    JoinColumn,
 } from "typeorm";
 import {
     IsString,
@@ -24,6 +26,7 @@ import {
 } from "class-validator";
 import { ServiceOffering } from "../entities/ServiceOffering.entity";
 import { Media } from "../entities/Media.entity";
+import { User } from "./User.entity";
 
 export enum VerificationStatus {
     PENDING = "pending",
@@ -139,6 +142,13 @@ export class Specialist {
         cascade: true,
     })
     media: Media[];
+
+    @ManyToOne(() => User, (user) => user.specialists)
+    @JoinColumn({ name: "user_id" })
+    user: User;
+
+    @Column({ name: "user_id", nullable: true })
+    userId: string;
 
     /**
      * Update isVerified based on verificationStatus

@@ -5,6 +5,7 @@ import { Specialist } from "../../../src/entities/Specialist.entity";
 import { Media, MimeType, MediaType } from "../../../src/entities/Media.entity";
 import { AppDataSource } from "../../../src/data-source";
 import { app } from "../../../src/server";
+import { UserRole } from "../../../src/entities/User.entity";
 
 describe("Media API Integration", () => {
     let specialistId: string;
@@ -27,16 +28,32 @@ describe("Media API Integration", () => {
         }
     });
 
+    let authToken: string;
+    let userId: string;
+
     beforeEach(async () => {
         await AppDataSource.query('DELETE FROM service_offerings');
         await AppDataSource.query('DELETE FROM media');
         await AppDataSource.query('DELETE FROM specialists');
+        await AppDataSource.query('DELETE FROM users');
+
+        // Setup user for authenticated requests
+        const regRes = await request(app).post("/api/v1/auth/register").send({
+            email: "specialist_media@example.com", password: "password123", role: UserRole.SPECIALIST
+        });
+        userId = regRes.body.data.id;
+
+        const loginRes = await request(app).post("/api/v1/auth/login").send({
+            email: "specialist_media@example.com", password: "password123"
+        });
+        authToken = loginRes.body.data.token;
 
         const repo = AppDataSource.getRepository(Specialist);
         const saved = await repo.save(repo.create({
             title: "Test Specialist", description: "Bio Bio Bio Bio Bio Bio Bio Bio Bio Bio",
             basePrice: 100, isDraft: true, durationDays: 1,
-            platformFee: 5, slug: "test-specialist"
+            platformFee: 5, slug: "test-specialist",
+            userId: userId
         }));
         specialistId = saved.id;
     });
@@ -45,6 +62,7 @@ describe("Media API Integration", () => {
         it("should upload a media file", async () => {
             const response = await request(app)
                 .post("/api/v1/media/upload")
+                .set("Authorization", `Bearer ${authToken}`)
                 .attach("file", testFilePath)
                 .field("specialistId", specialistId)
                 .field("displayOrder", 1);
@@ -97,6 +115,7 @@ describe("Media API Integration", () => {
 
             const response = await request(app)
                 .patch(`/api/v1/media/${saved.id}/reorder`)
+                .set("Authorization", `Bearer ${authToken}`)
                 .send({ displayOrder: 10 });
 
             expect(response.status).toBe(200);
@@ -125,7 +144,9 @@ describe("Media API Integration", () => {
             }
             fs.writeFileSync(filePath, "content");
 
-            const response = await request(app).delete(`/api/v1/media/${saved.id}`);
+            const response = await request(app)
+                .delete(`/api/v1/media/${saved.id}`)
+                .set("Authorization", `Bearer ${authToken}`);
 
             expect(response.status).toBe(204);
 

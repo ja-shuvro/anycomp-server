@@ -4,6 +4,7 @@ import { PlatformFee } from "../entities/PlatformFee.entity";
 import { ServiceOfferingsMasterList } from "../entities/ServiceOfferingsMasterList.entity";
 import { ServiceOffering } from "../entities/ServiceOffering.entity";
 import { Media } from "../entities/Media.entity";
+import { User } from "../entities/User.entity";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -17,6 +18,6 @@ export const TestDataSource = new DataSource({
     database: process.env.DB_NAME_TEST || "anycomp_test",
     synchronize: true, // Auto-sync schema for tests
     dropSchema: true,  // Drop schema before each test run
-    entities: [Specialist, PlatformFee, ServiceOfferingsMasterList, ServiceOffering, Media],
+    entities: [Specialist, PlatformFee, ServiceOfferingsMasterList, ServiceOffering, Media, User],
     logging: false
 });

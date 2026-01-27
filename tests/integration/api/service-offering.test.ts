@@ -3,6 +3,7 @@ import { ServiceOfferingsMasterList } from "../../../src/entities/ServiceOfferin
 import { ServiceOffering } from "../../../src/entities/ServiceOffering.entity";
 import { AppDataSource } from "../../../src/data-source";
 import { app } from "../../../src/server";
+import { UserRole } from "../../../src/entities/User.entity";
 
 describe("Service Offering API Integration", () => {
     beforeAll(async () => {
@@ -17,10 +18,23 @@ describe("Service Offering API Integration", () => {
         }
     });
 
+    let adminToken: string;
+
     beforeEach(async () => {
         // Clear dependent tables first
         await AppDataSource.query('DELETE FROM service_offerings');
         await AppDataSource.query('DELETE FROM service_offerings_master_list');
+        await AppDataSource.query('DELETE FROM specialists');
+        await AppDataSource.query('DELETE FROM users');
+
+        // Setup admin for authenticated requests
+        await request(app).post("/api/v1/auth/register").send({
+            email: "admin_so@example.com", password: "password123", role: UserRole.ADMIN
+        });
+        const loginRes = await request(app).post("/api/v1/auth/login").send({
+            email: "admin_so@example.com", password: "password123"
+        });
+        adminToken = loginRes.body.data.token;
     });
 
     describe("POST /api/v1/service-offerings", () => {
@@ -33,6 +47,7 @@ describe("Service Offering API Integration", () => {
 
             const response = await request(app)
                 .post("/api/v1/service-offerings")
+                .set("Authorization", `Bearer ${adminToken}`)
                 .send(payload);
 
             expect(response.status).toBe(201);
@@ -79,6 +94,7 @@ describe("Service Offering API Integration", () => {
 
             const response = await request(app)
                 .patch(`/api/v1/service-offerings/${saved.id}`)
+                .set("Authorization", `Bearer ${adminToken}`)
                 .send({ title: "New Title" });
 
             expect(response.status).toBe(200);
@@ -93,7 +109,9 @@ describe("Service Offering API Integration", () => {
                 serviceId: "S1", title: "T1", description: "Desc1 0123456789"
             }));
 
-            const response = await request(app).delete(`/api/v1/service-offerings/${saved.id}`);
+            const response = await request(app)
+                .delete(`/api/v1/service-offerings/${saved.id}`)
+                .set("Authorization", `Bearer ${adminToken}`);
 
             expect(response.status).toBe(204);
 

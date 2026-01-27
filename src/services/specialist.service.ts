@@ -6,7 +6,8 @@ import { CreateSpecialistDto } from "../dto/specialist/create-specialist.dto";
 import { UpdateSpecialistDto } from "../dto/specialist/update-specialist.dto";
 import { FilterSpecialistDto } from "../dto/specialist/filter-specialist.dto";
 import { PlatformFeeService } from "./platform-fee.service";
-import { NotFoundError, BadRequestError } from "../errors/custom-errors";
+import { NotFoundError, BadRequestError, ForbiddenError, UnauthorizedError } from "../errors/custom-errors";
+import { UserRole } from "../entities/User.entity";
 import { calculateOffset } from "../utils/pagination.helper";
 import logger from "../utils/logger";
 import { In } from "typeorm";
@@ -58,7 +59,7 @@ export class SpecialistService {
     /**
      * Create new specialist
      */
-    async create(dto: CreateSpecialistDto): Promise<Specialist> {
+    async create(dto: CreateSpecialistDto, user?: any): Promise<Specialist> {
         const queryRunner = AppDataSource.createQueryRunner();
         await queryRunner.connect();
         await queryRunner.startTransaction();
@@ -81,7 +82,8 @@ export class SpecialistService {
                 finalPrice,
                 isDraft: true,
                 verificationStatus: VerificationStatus.PENDING,
-                isVerified: false
+                isVerified: false,
+                userId: user?.id
             });
 
             const savedSpecialist = await queryRunner.manager.save(specialist);
@@ -142,6 +144,18 @@ export class SpecialistService {
         }
 
         return specialist;
+    }
+
+    /**
+     * Check if user is owner or admin
+     */
+    private checkOwnership(specialist: Specialist, user?: any) {
+        if (!user) {
+            throw new UnauthorizedError("Authentication required");
+        }
+        if (user.role !== UserRole.ADMIN && specialist.userId !== user.id) {
+            throw new ForbiddenError("You do not have permission to modify this specialist");
+        }
     }
 
     /**
@@ -216,8 +230,10 @@ export class SpecialistService {
     /**
      * Update specialist
      */
-    async update(id: string, dto: UpdateSpecialistDto): Promise<Specialist> {
+    async update(id: string, dto: UpdateSpecialistDto, user?: any): Promise<Specialist> {
         const specialist = await this.findOne(id);
+
+        this.checkOwnership(specialist, user);
 
         // Check slug uniqueness if changed
         if (dto.slug && dto.slug !== specialist.slug) {
@@ -239,8 +255,10 @@ export class SpecialistService {
     /**
      * Publish specialist (transition from draft to published)
      */
-    async publish(id: string): Promise<Specialist> {
+    async publish(id: string, user?: any): Promise<Specialist> {
         const specialist = await this.findOne(id);
+
+        this.checkOwnership(specialist, user);
 
         // Validation: Check if already published
         if (!specialist.isDraft) {
@@ -271,7 +289,10 @@ export class SpecialistService {
     /**
      * Delete specialist (soft delete)
      */
-    async delete(id: string): Promise<void> {
+    async delete(id: string, user?: any): Promise<void> {
+        const specialist = await this.findOne(id);
+        this.checkOwnership(specialist, user);
+
         const result = await this.specialistRepo.softDelete(id);
         if (result.affected === 0) {
             throw new NotFoundError("Specialist not found");

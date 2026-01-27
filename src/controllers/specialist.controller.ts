@@ -62,7 +62,7 @@ export class SpecialistController {
     async create(req: Request, res: Response, next: NextFunction) {
         try {
             const dto: CreateSpecialistDto = req.body;
-            const specialist = await this.service.create(dto);
+            const specialist = await this.service.create(dto, req.user);
             return successResponse(res, specialist, "Specialist created successfully", 201);
         } catch (error) {
             next(error);
@@ -76,7 +76,7 @@ export class SpecialistController {
         try {
             const { id } = req.params;
             const dto: UpdateSpecialistDto = req.body;
-            const specialist = await this.service.update(id, dto);
+            const specialist = await this.service.update(id, dto, req.user);
             return successResponse(res, specialist, "Specialist updated successfully");
         } catch (error) {
             next(error);
@@ -89,7 +89,7 @@ export class SpecialistController {
     async publish(req: Request, res: Response, next: NextFunction) {
         try {
             const { id } = req.params;
-            const specialist = await this.service.publish(id);
+            const specialist = await this.service.publish(id, req.user);
             return successResponse(res, specialist, "Specialist published successfully");
         } catch (error) {
             next(error);
@@ -102,7 +102,7 @@ export class SpecialistController {
     async delete(req: Request, res: Response, next: NextFunction) {
         try {
             const { id } = req.params;
-            await this.service.delete(id);
+            await this.service.delete(id, req.user);
             return res.status(204).send();
         } catch (error) {
             next(error);

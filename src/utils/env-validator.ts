@@ -12,7 +12,8 @@ export const validateEnv = (): void => {
         "DB_PORT",
         "DB_USER",
         "DB_PASS",
-        "DB_NAME"
+        "DB_NAME",
+        "JWT_SECRET"
     ];
 
     const missingVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
