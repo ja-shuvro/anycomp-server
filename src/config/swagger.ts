@@ -21,7 +21,7 @@ const options: swaggerJsdoc.Options = {
                 description: "Development server",
             },
             {
-                url: "https://api.anycomp.com/api/v1",
+                url: `https://${process.env.APP_DOMAIN || "anycomp-server.vercel.app"}/api/v1`,
                 description: "Production server",
             },
         ],
