@@ -4,22 +4,31 @@ import fs from "fs";
 
 // Ensure uploads directory exists
 const uploadsDir = "./uploads";
-if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
 // Configure storage
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, uploadsDir);
-    },
-    filename: (req, file, cb) => {
-        // Generate unique filename: timestamp-randomnumber.ext
-        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-        const ext = path.extname(file.originalname);
-        cb(null, uniqueSuffix + ext);
-    },
-});
+let storage;
+
+if (process.env.VERCEL) {
+    // Use memory storage for Vercel (read-only filesystem)
+    storage = multer.memoryStorage();
+} else {
+    // Ensure uploads directory exists for local development
+    if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    // Configure disk storage
+    storage = multer.diskStorage({
+        destination: (req, file, cb) => {
+            cb(null, uploadsDir);
+        },
+        filename: (req, file, cb) => {
+            // Generate unique filename: timestamp-randomnumber.ext
+            const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+            const ext = path.extname(file.originalname);
+            cb(null, uniqueSuffix + ext);
+        },
+    });
+}
 
 // File filter for allowed types
 const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
