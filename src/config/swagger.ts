@@ -107,7 +107,7 @@ const options: swaggerJsdoc.Options = {
                     type: "http",
                     scheme: "bearer",
                     bearerFormat: "JWT",
-                    description: "JWT Authorization header using Bearer scheme (for future auth)",
+                    description: "JWT Authorization header using Bearer scheme",
                 },
             },
         },

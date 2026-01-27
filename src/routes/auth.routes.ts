@@ -8,33 +8,13 @@ import { authMiddleware } from "../middleware/auth.middleware";
 const router = Router();
 const authController = new AuthController();
 
-/**
- * @swagger
- * /auth/register:
- *   post:
- *     summary: Register a new user
- *     tags: [Authentication]
- */
+// Register /auth/register
 router.post("/register", validateRequest(RegisterDto), authController.register);
 
-/**
- * @swagger
- * /auth/login:
- *   post:
- *     summary: Login and get JWT token
- *     tags: [Authentication]
- */
+// Login /auth/login
 router.post("/login", validateRequest(LoginDto), authController.login);
 
-/**
- * @swagger
- * /auth/me:
- *   get:
- *     summary: Get current user info
- *     tags: [Authentication]
- *     security:
- *       - bearerAuth: []
- */
+// Get Me /auth/me
 router.get("/me", authMiddleware, authController.getMe);
 
 export default router;

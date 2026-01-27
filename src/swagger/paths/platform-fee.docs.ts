@@ -14,8 +14,10 @@
  * @swagger
  * /platform-fees:
  *   get:
- *     summary: Get all platform fee tiers
+ *     summary: Get all platform fee tiers (Admin Only)
  *     tags: [Platform Fees]
+ *     security:
+ *       - BearerAuth: []
  *     description: Retrieve all platform fee tiers ordered by minimum value with pagination support
  *     parameters:
  *       - in: query
@@ -79,8 +81,10 @@
  * @swagger
  * /platform-fees/{id}:
  *   get:
- *     summary: Get platform fee by ID
+ *     summary: Get platform fee by ID (Admin Only)
  *     tags: [Platform Fees]
+ *     security:
+ *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -104,8 +108,10 @@
  * @swagger
  * /platform-fees:
  *   post:
- *     summary: Create new platform fee tier
+ *     summary: Create new platform fee tier (Admin Only)
  *     tags: [Platform Fees]
+ *     security:
+ *       - BearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -153,8 +159,10 @@
  * @swagger
  * /platform-fees/{id}:
  *   patch:
- *     summary: Update platform fee tier (partial)
+ *     summary: Update platform fee tier (Admin Only)
  *     tags: [Platform Fees]
+ *     security:
+ *       - BearerAuth: []
  *     description: Partially update an existing platform fee tier. Only provided fields will be updated.
  *     parameters:
  *       - in: path
@@ -192,8 +200,10 @@
  *       409:
  *         description: Range overlaps with existing tier
  *   delete:
- *     summary: Delete platform fee tier
+ *     summary: Delete platform fee tier (Admin Only)
  *     tags: [Platform Fees]
+ *     security:
+ *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id

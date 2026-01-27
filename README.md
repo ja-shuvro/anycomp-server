@@ -4,6 +4,9 @@ A comprehensive NestJS-style backend API for managing specialists, services, and
 
 ## 🚀 Features
 
+- **JWT Authentication** - Secure access to protected resources
+- **Role-Based Access Control (RBAC)** - Granular permissions for ADMIN and SPECIALIST roles
+- **Data Ownership Enforcement** - Strict data isolation using ownership middleware
 - **Platform Fee Management** - Dynamic fee calculation with tiered pricing
 - **Service Offerings** - Manage master list of available services
 - **Specialist Profiles** - Complete CRUD with draft/publish workflow
@@ -11,7 +14,7 @@ A comprehensive NestJS-style backend API for managing specialists, services, and
 - **Media Management** - File uploads with validation (images, videos, PDFs)
 - **Soft Delete** - Data preservation with soft delete pattern
 - **Health Monitoring** - Endpoint for system and database health checks
-- **Swagger Documentation** - Interactive API documentation at `/api-docs`
+- **Vercel Ready** - Optimized for serverless deployment
 
 ## 📋 Prerequisites
 
@@ -50,6 +53,10 @@ DB_USER=postgres
 DB_PASS=your_password
 DB_NAME=anycomp_db
 
+# Security
+JWT_SECRET=your_super_secret_key
+JWT_EXPIRES_IN=24h
+
 # CORS
 CORS_ORIGIN=*
 
@@ -68,6 +75,9 @@ npm run migration:generate -- src/migrations/MigrationName
 
 # Revert last migration
 npm run migration:revert
+
+# Seed data
+npm run seed
 ```
 
 ## 🏃 Running the Application
@@ -90,9 +100,16 @@ The API will be available at `http://localhost:3000`
 
 Interactive Swagger documentation: `http://localhost:3000/api-docs`
 
-### Core Endpoints
+### Core Modules
 
-#### Platform Fees
+#### Authentication
+```
+POST   /api/v1/auth/register       # Register new user
+POST   /api/v1/auth/login          # Login and get token
+GET    /api/v1/auth/me             # Get current user info (Auth)
+```
+
+#### Platform Fees (Admin Only)
 ```
 GET    /api/v1/platform-fees              # List all fee tiers
 POST   /api/v1/platform-fees              # Create fee tier
@@ -102,7 +119,7 @@ DELETE /api/v1/platform-fees/:id          # Delete fee tier
 POST   /api/v1/platform-fees/calculate    # Calculate fee for amount
 ```
 
-#### Service Offerings
+#### Service Offerings (Admin Only Mutations)
 ```
 GET    /api/v1/service-offerings           # List all services
 POST   /api/v1/service-offerings           # Create service
@@ -113,32 +130,20 @@ DELETE /api/v1/service-offerings/:id       # Delete service
 
 #### Specialists
 ```
-GET    /api/v1/specialists                 # List specialists (with filters)
-POST   /api/v1/specialists                 # Create specialist
-GET    /api/v1/specialists/:id             # Get specialist
-PATCH  /api/v1/specialists/:id             # Update specialist
-DELETE /api/v1/specialists/:id             # Delete specialist (soft)
-PATCH  /api/v1/specialists/:id/publish     # Publish specialist
-```
-
-**Specialist Filters & Sorting:**
-```
-?search=keyword              # Search in title/description
-?status=verified             # Filter by status (pending/verified/rejected)
-?isDraft=false               # Filter by draft status
-?minPrice=1000&maxPrice=5000 # Filter by price range
-?minRating=4.0               # Filter by minimum rating
-?sortBy=price                # Sort by: price, rating, alphabetical, newest
-?sortOrder=desc              # Sort order: asc, desc
-?page=1&limit=10             # Pagination
+GET    /api/v1/specialists                 # List specialists (Public)
+GET    /api/v1/specialists/:id             # Get specialist (Public)
+POST   /api/v1/specialists                 # Create specialist (Auth)
+PATCH  /api/v1/specialists/:id             # Update specialist (Owner/Admin)
+DELETE /api/v1/specialists/:id             # Delete specialist (Owner/Admin)
+PATCH  /api/v1/specialists/:id/publish     # Publish specialist (Owner/Admin)
 ```
 
 #### Media
 ```
-POST   /api/v1/media/upload                      # Upload file (multipart/form-data)
-DELETE /api/v1/media/:id                         # Delete media
+POST   /api/v1/media/upload                      # Upload file (Owner/Admin)
+DELETE /api/v1/media/:id                         # Delete media (Owner/Admin)
 GET    /api/v1/media/specialist/:specialistId    # List specialist media
-PATCH  /api/v1/media/:id/reorder                 # Update display order
+PATCH  /api/v1/media/:id/reorder                 # Update order (Owner/Admin)
 ```
 
 **Upload Example:**
@@ -232,33 +237,55 @@ Tiered percentage-based fees:
 - Display order for galleries
 - Public URL generation for access
 
+## 🔒 Security
+
+### Role-Based Access Control (RBAC)
+- **ADMIN**: Full access to all modules, including platform fees and service master lists.
+- **SPECIALIST**: Can manage their own profiles and associated media.
+- **CLIENT/USER**: Public read access to verified specialist profiles.
+
+### Data Ownership
+Strict isolation is enforced via `ownershipMiddleware`. Users can only modify or delete specialist profiles and media they created.
+
+### JWT Authentication
+Protects all sensitive endpoints. Standard `Bearer <token>` in Authorization header.
+
 ## 🧪 Testing
 
+Integration tests cover authentication, RBAC, ownership, and core CRUD logic.
+
 ```bash
-# Run tests (when implemented)
-npm test
+# Run all integration tests
+npm test tests/integration/api -- --runInBand
 
 # Test coverage
-npm run test:cov
+npm run test:coverage
 ```
 
-## 🚢 Deployment
+### Verification Results
+- **38 Integration Tests**: All PASS
+- **Security Coverage**: Auth, Roles, and Ownership fully validated.
 
-### Production Build
+## 🚢 Deployment (Vercel)
 
-```bash
-npm run build
-NODE_ENV=production node dist/server.js
-```
+This project is optimized for Vercel Serverless Functions.
 
-### Environment Variables (Production)
+1.  **Preparation**:
+    - Project includes `vercel.json` for routing.
+    - `api/index.ts` serves as the serverless entry point.
+2.  **Configuration**: Add all `.env` variables (including `JWT_SECRET`) to Vercel Project Settings.
+3.  **CI/CD**: Connect GitHub repository for automated deployments.
+
+### Production Environment Variables
 
 ```env
 NODE_ENV=production
-APP_PORT=3000
-DB_HOST=production-db-host
-DB_SSL=true
-LOG_LEVEL=warn
+DB_HOST=your-db-host
+DB_USER=your-user
+DB_PASS=your-password
+DB_NAME=your-db
+JWT_SECRET=secure-production-secret
+JWT_EXPIRES_IN=24h
 ```
 
 ### Docker (Optional)

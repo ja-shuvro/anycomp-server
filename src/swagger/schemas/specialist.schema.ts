@@ -42,6 +42,10 @@
  *         updatedAt:
  *           type: string
  *           format: date-time
+ *         userId:
+ *           type: string
+ *           format: uuid
+ *           description: ID of the owner user
  *         serviceOfferings:
  *           type: array
  *           items:

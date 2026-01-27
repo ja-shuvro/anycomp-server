@@ -123,7 +123,7 @@ process.on("unhandledRejection", (reason: any) => {
     process.exit(1);
 });
 
-// Start the server if not in test environment
-if (process.env.NODE_ENV !== "test") {
+// Start the server if not in test environment and not on Vercel
+if (process.env.NODE_ENV !== "test" && !process.env.VERCEL) {
     startServer();
 }

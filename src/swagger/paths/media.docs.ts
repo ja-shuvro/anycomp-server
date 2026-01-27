@@ -9,9 +9,11 @@
  * @swagger
  * /media/upload:
  *   post:
- *     summary: Upload media file
- *     description: Upload an image, video, or document for a specialist profile
+ *     summary: Upload media file (Authenticated)
+ *     description: Upload an image, video, or document for a specialist profile. Requires SPECIALIST role and ownership of the specialist record.
  *     tags: [Media]
+ *     security:
+ *       - BearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -48,9 +50,11 @@
  *
  * /media/{id}:
  *   delete:
- *     summary: Delete media file
- *     description: Soft deletes the media record and removes the physical file
+ *     summary: Delete media file (Owner Only)
+ *     description: Soft deletes the media record and removes the physical file. Requires ownership of the associated specialist.
  *     tags: [Media]
+ *     security:
+ *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -88,9 +92,11 @@
  *
  * /media/{id}/reorder:
  *   patch:
- *     summary: Update display order
- *     description: Change the display order of a media file
+ *     summary: Update display order (Owner Only)
+ *     description: Change the display order of a media file. Requires ownership of the associated specialist.
  *     tags: [Media]
+ *     security:
+ *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id

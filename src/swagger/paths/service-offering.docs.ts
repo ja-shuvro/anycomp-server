@@ -9,8 +9,10 @@
  * @swagger
  * /service-offerings:
  *   get:
- *     summary: Get all service offerings
+ *     summary: Get all service offerings (Admin Only)
  *     tags: [Service Offerings]
+ *     security:
+ *       - BearerAuth: []
  *     parameters:
  *       - in: query
  *         name: page
@@ -40,8 +42,10 @@
  *                         $ref: '#/components/schemas/ServiceOffering'
  *
  *   post:
- *     summary: Create new service offering
+ *     summary: Create new service offering (Admin Only)
  *     tags: [Service Offerings]
+ *     security:
+ *       - BearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -62,8 +66,10 @@
  *
  * /service-offerings/{id}:
  *   get:
- *     summary: Get service offering by ID
+ *     summary: Get service offering by ID (Admin Only)
  *     tags: [Service Offerings]
+ *     security:
+ *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -88,9 +94,11 @@
  *       404:
  *         description: Service offering not found
  *
- *   put:
- *     summary: Update service offering
+ *   patch:
+ *     summary: Update service offering (Admin Only)
  *     tags: [Service Offerings]
+ *     security:
+ *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -121,8 +129,10 @@
  *         description: Service not found
  *
  *   delete:
- *     summary: Delete service offering
+ *     summary: Delete service offering (Admin Only)
  *     tags: [Service Offerings]
+ *     security:
+ *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id

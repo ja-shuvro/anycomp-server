@@ -69,8 +69,11 @@
  *                         $ref: '#/components/schemas/Specialist'
  *
  *   post:
- *     summary: Create new specialist
+ *     summary: Create new specialist (Authenticated)
+ *     description: Create a new specialist profile. Requires SPECIALIST or ADMIN role.
  *     tags: [Specialists]
+ *     security:
+ *       - BearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -107,8 +110,11 @@
  *         description: Not found
  *
  *   patch:
- *     summary: Update specialist
+ *     summary: Update specialist (Owner Only)
+ *     description: Update specialist profile details. Requires ownership or ADMIN role.
  *     tags: [Specialists]
+ *     security:
+ *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -128,9 +134,11 @@
  *
  * /specialists/{id}/publish:
  *   patch:
- *     summary: Publish specialist (draft to published)
- *     description: Transitions a specialist from draft to published status. Validates that the specialist has all required fields and at least one service.
+ *     summary: Publish specialist (Owner Only)
+ *     description: Transitions a specialist from draft to published status. Requires ownership or ADMIN role. Validates all required fields and at least one service.
  *     tags: [Specialists]
+ *     security:
+ *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -151,8 +159,11 @@
  *         description: Specialist not found
  *
  *   delete:
- *     summary: Delete specialist
+ *     summary: Delete specialist (Owner Only)
+ *     description: Soft delete specialist profile. Requires ownership or ADMIN role.
  *     tags: [Specialists]
+ *     security:
+ *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
