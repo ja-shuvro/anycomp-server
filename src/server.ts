@@ -57,7 +57,7 @@ app.get("/", (req, res) => {
         success: true,
         message: "Welcome to Anycomp Specialist Management API",
         version: "1.0.0",
-        documentation: `http://localhost:${PORT}/api-docs`,
+        documentation: `/api-docs`,
     });
 });
 

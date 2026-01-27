@@ -8,8 +8,12 @@ export const securityMiddleware = helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
-            scriptSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com"],
+            scriptSrc: [
+                "'self'",
+                "https://cdnjs.cloudflare.com",
+                "https://vercel.live",
+            ],
             imgSrc: ["'self'", "data:", "https:"],
         },
     },
