@@ -10,7 +10,7 @@
  * /media/upload:
  *   post:
  *     summary: Upload media file (Authenticated)
- *     description: Upload an image, video, or document. Can optionally be associated with a specialist. Requires SPECIALIST role. If specialistId is provided, user must own that specialist.
+ *     description: Upload an image, video, or document to Cloudinary cloud storage. Can optionally be associated with a specialist. Requires SPECIALIST role. If specialistId is provided, user must own that specialist.
  *     tags: [Media]
  *     security:
  *       - BearerAuth: []
@@ -90,7 +90,7 @@
  *
  *   delete:
  *     summary: Delete media file (Owner Only)
- *     description: Soft deletes the media record and removes the physical file. Requires ownership of the associated specialist (if assigned).
+ *     description: Soft deletes the media record and removes the file from Cloudinary cloud storage. Requires ownership of the associated specialist (if assigned).
  *     tags: [Media]
  *     security:
  *       - BearerAuth: []

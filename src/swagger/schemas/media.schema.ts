@@ -14,6 +14,7 @@
  *           nullable: true
  *         fileName:
  *           type: string
+ *           description: Cloudinary public_id (used for file deletion)
  *         fileSize:
  *           type: integer
  *         displayOrder:
@@ -29,13 +30,8 @@
  *           format: date-time
  *         publicUrl:
  *           type: string
- *           nullable: true
- *         s3Key:
- *           type: string
- *           nullable: true
- *         bucketName:
- *           type: string
- *           nullable: true
+ *           description: Cloudinary CDN URL
+ *           example: https://res.cloudinary.com/your-cloud/image/upload/v123456/anycomp/media/abc123.jpg
  *         createdAt:
  *           type: string
  *           format: date-time

@@ -4,7 +4,7 @@ import { Specialist } from "../entities/Specialist.entity";
 import { NotFoundError, ForbiddenError, UnauthorizedError } from "../errors/custom-errors";
 import { UserRole } from "../entities/User.entity";
 import logger from "../utils/logger";
-import fs from "fs";
+import { uploadToCloudinary, deleteFromCloudinary } from "../config/cloudinary.config";
 import path from "path";
 
 export class MediaService {
@@ -65,8 +65,6 @@ export class MediaService {
             // Verify specialist exists
             const specialist = await this.specialistRepo.findOne({ where: { id: specialistId } });
             if (!specialist) {
-                // Clean up uploaded file
-                fs.unlinkSync(file.path);
                 throw new NotFoundError("Specialist not found");
             }
 
@@ -84,20 +82,29 @@ export class MediaService {
             displayOrder = displayOrder ?? 0;
         }
 
-        // Create media record
+        // Upload to Cloudinary
+        let cloudinaryResult;
+        try {
+            cloudinaryResult = await uploadToCloudinary(file.buffer, "anycomp/media");
+        } catch (error) {
+            logger.error("Failed to upload to Cloudinary:", error);
+            throw new Error("Failed to upload file to cloud storage");
+        }
+
+        // Create media record with Cloudinary data
         const media = this.mediaRepo.create({
             specialists: specialistId || null,
-            fileName: file.filename,
+            fileName: cloudinaryResult.public_id, // Store Cloudinary public_id for deletion
             fileSize: file.size,
             displayOrder: displayOrder,
             mimeType: this.getMimeTypeEnum(file.mimetype),
             mediaType: this.getMediaType(file.mimetype),
             uploadedAt: new Date(),
-            publicUrl: `/uploads/${file.filename}`, // Local URL
+            publicUrl: cloudinaryResult.secure_url, // Cloudinary URL
         });
 
         const savedMedia = await this.mediaRepo.save(media);
-        logger.info(`Media uploaded: ${savedMedia.id}${specialistId ? ` for specialist ${specialistId}` : ''}`);
+        logger.info(`Media uploaded to Cloudinary: ${savedMedia.id}${specialistId ? ` for specialist ${specialistId}` : ''}`);
 
         return savedMedia;
     }
@@ -116,11 +123,13 @@ export class MediaService {
             await this.checkSpecialistOwnership(media.specialists, user);
         }
 
-        // Delete physical file
-        const filePath = path.join("./uploads", media.fileName);
-        if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-            logger.info(`File deleted: ${filePath}`);
+        // Delete from Cloudinary (fileName contains the public_id)
+        try {
+            await deleteFromCloudinary(media.fileName);
+            logger.info(`File deleted from Cloudinary: ${media.fileName}`);
+        } catch (error) {
+            logger.error(`Failed to delete from Cloudinary: ${media.fileName}`, error);
+            // Continue with DB deletion even if Cloudinary deletion fails
         }
 
         // Soft delete from DB
