@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, Length } from "class-validator";
+import { IsString, IsNotEmpty, IsOptional, Length, IsUUID } from "class-validator";
 
 /**
  * DTO for updating a service offering
@@ -21,4 +21,8 @@ export class UpdateServiceOfferingDto {
     @IsString()
     @IsOptional()
     bucketName?: string;
+
+    @IsUUID("4")
+    @IsOptional()
+    specialistId?: string;
 }

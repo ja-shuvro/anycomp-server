@@ -29,6 +29,29 @@
  *         updatedAt:
  *           type: string
  *           format: date-time
+ *         serviceOfferings:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               id:
+ *                 type: string
+ *                 format: uuid
+ *               specialists:
+ *                 type: string
+ *                 format: uuid
+ *               specialist:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                     format: uuid
+ *                   title:
+ *                     type: string
+ *                   description:
+ *                     type: string
+ *                   basePrice:
+ *                     type: number
  *
  *     CreateServiceOfferingRequest:
  *       type: object
@@ -72,4 +95,8 @@
  *           type: string
  *         bucketName:
  *           type: string
+ *         specialistId:
+ *           type: string
+ *           format: uuid
+ *           description: Optional - change the specialist association
  */
