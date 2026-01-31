@@ -1,12 +1,16 @@
 import { ServiceOfferingService } from "../../../src/services/service-offering.service";
 import { AppDataSource } from "../../../src/data-source";
-import { NotFoundError, ConflictError } from "../../../src/errors/custom-errors";
+import { NotFoundError } from "../../../src/errors/custom-errors";
+import { Specialist } from "../../../src/entities/Specialist.entity";
+import { ServiceOfferingsMasterList } from "../../../src/entities/ServiceOfferingsMasterList.entity";
+import { ServiceOffering } from "../../../src/entities/ServiceOffering.entity";
 
 jest.mock("../../../src/data-source");
 
 describe("ServiceOfferingService", () => {
     let service: ServiceOfferingService;
     let mockRepository: any;
+    let mockQueryRunner: any;
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -19,6 +23,38 @@ describe("ServiceOfferingService", () => {
             delete: jest.fn(),
         };
 
+        const mockManager = {
+            getRepository: jest.fn((entity) => {
+                if (entity === Specialist) {
+                    return {
+                        findOne: jest.fn(),
+                    };
+                }
+                if (entity === ServiceOfferingsMasterList) {
+                    return {
+                        create: jest.fn(),
+                    };
+                }
+                if (entity === ServiceOffering) {
+                    return {
+                        create: jest.fn(),
+                    };
+                }
+                return mockRepository;
+            }),
+            save: jest.fn(),
+        };
+
+        mockQueryRunner = {
+            connect: jest.fn(),
+            startTransaction: jest.fn(),
+            commitTransaction: jest.fn(),
+            rollbackTransaction: jest.fn(),
+            release: jest.fn(),
+            manager: mockManager,
+        };
+
+        (AppDataSource.createQueryRunner as jest.Mock) = jest.fn().mockReturnValue(mockQueryRunner);
         (AppDataSource.getRepository as jest.Mock) = jest.fn().mockReturnValue(mockRepository);
         service = new ServiceOfferingService();
     });
@@ -59,26 +95,47 @@ describe("ServiceOfferingService", () => {
     });
 
     describe("create", () => {
-        it("should create a new service offering", async () => {
-            const dto = { serviceId: "S1", title: "New Service", basePrice: 100 };
-            const mockSaved = { id: "uuid", ...dto };
+        it("should create a new service offering and junction entry", async () => {
+            const dto = { specialistId: "spec-123", title: "New Service", description: "Test description with length" };
+            const mockSpecialist = { id: "spec-123", title: "Test Specialist" };
+            const mockSavedMasterList = { id: "master-123", ...dto };
+            const mockServiceOffering = { id: "junction-123" };
 
-            mockRepository.findOne.mockResolvedValue(null); // No duplicate
-            mockRepository.create.mockReturnValue(dto);
-            mockRepository.save.mockResolvedValue(mockSaved);
+            // Mock specialist repository
+            const mockSpecialistRepo = mockQueryRunner.manager.getRepository(Specialist);
+            mockSpecialistRepo.findOne.mockResolvedValue(mockSpecialist);
+
+            // Mock service offerings master list repository
+            const mockMasterListRepo = mockQueryRunner.manager.getRepository(ServiceOfferingsMasterList);
+            mockMasterListRepo.create.mockReturnValue(mockSavedMasterList);
+
+            // Mock service offering repository
+            const mockJunctionRepo = mockQueryRunner.manager.getRepository(ServiceOffering);
+            mockJunctionRepo.create.mockReturnValue(mockServiceOffering);
+
+            // Mock manager save
+            mockQueryRunner.manager.save
+                .mockResolvedValueOnce(mockSavedMasterList) // First call for master list
+                .mockResolvedValueOnce(mockServiceOffering); // Second call for junction
 
             const result = await service.create(dto as any);
 
-            expect(result).toEqual(mockSaved);
-            expect(mockRepository.create).toHaveBeenCalledWith(dto);
-            expect(mockRepository.save).toHaveBeenCalled();
+            expect(result).toEqual(mockSavedMasterList);
+            expect(mockQueryRunner.connect).toHaveBeenCalled();
+            expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
+            expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+            expect(mockQueryRunner.release).toHaveBeenCalled();
         });
 
-        it("should throw ConflictError if serviceId already exists", async () => {
-            const dto = { serviceId: "S1", title: "New Service" };
-            mockRepository.findOne.mockResolvedValue({ id: "existing" });
+        it("should throw NotFoundError if specialist does not exist", async () => {
+            const dto = { specialistId: "non-existent", title: "New Service", description: "Test" };
 
-            await expect(service.create(dto as any)).rejects.toThrow(ConflictError);
+            const mockSpecialistRepo = mockQueryRunner.manager.getRepository(Specialist);
+            mockSpecialistRepo.findOne.mockResolvedValue(null);
+
+            await expect(service.create(dto as any)).rejects.toThrow(NotFoundError);
+            expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+            expect(mockQueryRunner.release).toHaveBeenCalled();
         });
     });
 

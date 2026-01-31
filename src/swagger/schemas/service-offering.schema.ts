@@ -15,10 +15,6 @@
  *         description:
  *           type: string
  *           example: "Complete company registration and incorporation services including documentation."
- *         serviceId:
- *           type: string
- *           example: "service_001"
- *           description: Unique identifier for the service (thumbtack style)
  *         s3Key:
  *           type: string
  *           nullable: true
@@ -39,7 +35,7 @@
  *       required:
  *         - title
  *         - description
- *         - serviceId
+ *         - specialistId
  *       properties:
  *         title:
  *           type: string
@@ -50,12 +46,11 @@
  *           type: string
  *           minLength: 10
  *           example: "Description of the new service offering."
- *         serviceId:
+ *         specialistId:
  *           type: string
- *           minLength: 3
- *           maxLength: 100
- *           pattern: "^[a-zA-Z0-9_-]+$"
- *           example: "service_999"
+ *           format: uuid
+ *           example: "550e8400-e29b-41d4-a716-446655440000"
+ *           description: ID of the specialist to associate with this service offering
  *         s3Key:
  *           type: string
  *           example: "icons/new-service.png"

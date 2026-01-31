@@ -9,7 +9,6 @@ export const mockPlatformFee = (overrides = {}) => ({
 export const mockServiceOffering = (overrides = {}) => ({
     title: "Test Service",
     description: "Test service description",
-    serviceId: `service_${Date.now()}`,
     ...overrides
 });
 

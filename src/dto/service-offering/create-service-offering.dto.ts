@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, Length, Matches } from "class-validator";
+import { IsString, IsNotEmpty, IsOptional, Length, IsUUID } from "class-validator";
 
 /**
  * DTO for creating a service offering
@@ -14,11 +14,10 @@ export class CreateServiceOfferingDto {
     @Length(10, 5000, { message: "Description must be at least 10 characters" })
     description: string;
 
-    @IsString({ message: "Service ID must be a string" })
-    @IsNotEmpty({ message: "Service ID is required" })
-    @Length(3, 100, { message: "Service ID must be between 3 and 100 characters" })
-    @Matches(/^[a-zA-Z0-9_-]+$/, { message: "Service ID can only contain letters, numbers, underscores, and hyphens" })
-    serviceId: string;
+    @IsString({ message: "Specialist ID must be a string" })
+    @IsNotEmpty({ message: "Specialist ID is required" })
+    @IsUUID("4", { message: "Specialist ID must be a valid UUID" })
+    specialistId: string;
 
     @IsString()
     @IsOptional()

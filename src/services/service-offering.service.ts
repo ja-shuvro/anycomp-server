@@ -1,5 +1,7 @@
 import { AppDataSource } from "../data-source";
 import { ServiceOfferingsMasterList } from "../entities/ServiceOfferingsMasterList.entity";
+import { ServiceOffering } from "../entities/ServiceOffering.entity";
+import { Specialist } from "../entities/Specialist.entity";
 import { CreateServiceOfferingDto } from "../dto/service-offering/create-service-offering.dto";
 import { UpdateServiceOfferingDto } from "../dto/service-offering/update-service-offering.dto";
 import { NotFoundError, ConflictError } from "../errors/custom-errors";
@@ -61,28 +63,55 @@ export class ServiceOfferingService {
      * Create new service offering
      */
     async create(dto: CreateServiceOfferingDto): Promise<ServiceOfferingsMasterList> {
+        const queryRunner = AppDataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+
         try {
-            // Check for duplicate serviceId
-            const existing = await this.serviceRepository.findOne({
-                where: { serviceId: dto.serviceId },
+            const specialistRepository = queryRunner.manager.getRepository(Specialist);
+            const serviceRepository = queryRunner.manager.getRepository(ServiceOfferingsMasterList);
+            const serviceOfferingRepository = queryRunner.manager.getRepository(ServiceOffering);
+
+            // Validate that specialist exists
+            const specialist = await specialistRepository.findOne({
+                where: { id: dto.specialistId },
             });
 
-            if (existing) {
-                throw new ConflictError(
-                    `Service offering with ID '${dto.serviceId}' already exists`,
-                    "SERVICE_ID_EXISTS"
+            if (!specialist) {
+                throw new NotFoundError(
+                    `Specialist with ID ${dto.specialistId} not found`,
+                    "SPECIALIST_NOT_FOUND"
                 );
             }
 
-            const service = this.serviceRepository.create(dto);
-            const saved = await this.serviceRepository.save(service);
+            // Create ServiceOfferingsMasterList
+            const { specialistId, ...masterListData } = dto;
+            const serviceMasterList = serviceRepository.create(masterListData);
+            const savedMasterList = await queryRunner.manager.save(serviceMasterList);
 
-            logger.info(`Created service offering: ${saved.title} (${saved.serviceId})`);
-            return saved;
+            // Create ServiceOffering junction entry
+            const serviceOffering = serviceOfferingRepository.create({
+                serviceOfferingsMasterListId: savedMasterList.id,
+                specialists: specialistId,
+            });
+            await queryRunner.manager.save(serviceOffering);
+
+            // Commit transaction
+            await queryRunner.commitTransaction();
+
+            logger.info(
+                `Created service offering: ${savedMasterList.title} and linked to specialist ${specialistId}`
+            );
+            return savedMasterList;
         } catch (error) {
-            if (error instanceof ConflictError) throw error;
+            // Rollback transaction on error
+            await queryRunner.rollbackTransaction();
+            if (error instanceof NotFoundError) throw error;
             logger.error("Error creating service offering:", error);
             throw error;
+        } finally {
+            // Release query runner
+            await queryRunner.release();
         }
     }
 

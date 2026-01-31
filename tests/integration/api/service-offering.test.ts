@@ -1,5 +1,6 @@
 import request from "supertest";
 import { ServiceOfferingsMasterList } from "../../../src/entities/ServiceOfferingsMasterList.entity";
+import { Specialist } from "../../../src/entities/Specialist.entity";
 import { ServiceOffering } from "../../../src/entities/ServiceOffering.entity";
 import { AppDataSource } from "../../../src/data-source";
 import { app } from "../../../src/server";
@@ -19,6 +20,7 @@ describe("Service Offering API Integration", () => {
     });
 
     let adminToken: string;
+    let specialistId: string;
 
     beforeEach(async () => {
         // Clear dependent tables first
@@ -35,12 +37,22 @@ describe("Service Offering API Integration", () => {
             email: "admin_so@example.com", password: "password123"
         });
         adminToken = loginRes.body.data.token;
+
+        // Create a specialist to link service offerings to
+        const specialistRepo = AppDataSource.getRepository(Specialist);
+        const specialist = await specialistRepo.save(specialistRepo.create({
+            title: "Test Specialist",
+            description: "Test specialist description for service offerings",
+            basePrice: 5000,
+            durationDays: 7,
+        }));
+        specialistId = specialist.id;
     });
 
     describe("POST /api/v1/service-offerings", () => {
-        it("should create a new service offering", async () => {
+        it("should create a new service offering and link to specialist", async () => {
             const payload = {
-                serviceId: "S-101",
+                specialistId: specialistId,
                 title: "Mock Interview",
                 description: "Full mock interview session length description"
             };
@@ -52,7 +64,15 @@ describe("Service Offering API Integration", () => {
 
             expect(response.status).toBe(201);
             expect(response.body.success).toBe(true);
-            expect(response.body.data.serviceId).toBe("S-101");
+            expect(response.body.data.title).toBe("Mock Interview");
+
+            // Verify junction table entry was created
+            const junctionRepo = AppDataSource.getRepository(ServiceOffering);
+            const junction = await junctionRepo.findOne({
+                where: { serviceOfferingsMasterListId: response.body.data.id }
+            });
+            expect(junction).not.toBeNull();
+            expect(junction?.specialists).toBe(specialistId);
         });
     });
 
@@ -60,8 +80,8 @@ describe("Service Offering API Integration", () => {
         it("should return paginated services", async () => {
             const repo = AppDataSource.getRepository(ServiceOfferingsMasterList);
             await repo.save([
-                repo.create({ serviceId: "S1", title: "T1", description: "Desc1 0123456789" }),
-                repo.create({ serviceId: "S2", title: "T2", description: "Desc2 0123456789" })
+                repo.create({ title: "T1", description: "Desc1 0123456789" }),
+                repo.create({ title: "T2", description: "Desc2 0123456789" })
             ]);
 
             const response = await request(app).get("/api/v1/service-offerings");
@@ -75,13 +95,13 @@ describe("Service Offering API Integration", () => {
         it("should return a single service", async () => {
             const repo = AppDataSource.getRepository(ServiceOfferingsMasterList);
             const saved = await repo.save(repo.create({
-                serviceId: "S1", title: "T1", description: "Desc1 0123456789"
+                title: "T1", description: "Desc1 0123456789"
             }));
 
             const response = await request(app).get(`/api/v1/service-offerings/${saved.id}`);
 
             expect(response.status).toBe(200);
-            expect(response.body.data.serviceId).toBe("S1");
+            expect(response.body.data.title).toBe("T1");
         });
     });
 
@@ -89,7 +109,7 @@ describe("Service Offering API Integration", () => {
         it("should update an existing service", async () => {
             const repo = AppDataSource.getRepository(ServiceOfferingsMasterList);
             const saved = await repo.save(repo.create({
-                serviceId: "S1", title: "Old", description: "Desc1 0123456789"
+                title: "Old", description: "Desc1 0123456789"
             }));
 
             const response = await request(app)
@@ -106,7 +126,7 @@ describe("Service Offering API Integration", () => {
         it("should delete a service", async () => {
             const repo = AppDataSource.getRepository(ServiceOfferingsMasterList);
             const saved = await repo.save(repo.create({
-                serviceId: "S1", title: "T1", description: "Desc1 0123456789"
+                title: "T1", description: "Desc1 0123456789"
             }));
 
             const response = await request(app)
