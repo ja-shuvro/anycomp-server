@@ -1,12 +1,28 @@
 import { v2 as cloudinary, UploadApiResponse } from "cloudinary";
 import logger from "../utils/logger";
 
+// Validate environment variables
+const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+const apiKey = process.env.CLOUDINARY_API_KEY;
+const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+if (!cloudName || !apiKey || !apiSecret) {
+    logger.error("Cloudinary configuration missing:", {
+        hasCloudName: !!cloudName,
+        hasApiKey: !!apiKey,
+        hasApiSecret: !!apiSecret,
+    });
+    throw new Error("Cloudinary environment variables are not configured. Please check CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET.");
+}
+
 // Configure Cloudinary
 cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
+    cloud_name: cloudName,
+    api_key: apiKey,
+    api_secret: apiSecret,
 });
+
+logger.info("Cloudinary configured successfully", { cloud_name: cloudName });
 
 /**
  * Upload file buffer to Cloudinary
@@ -19,6 +35,19 @@ export const uploadToCloudinary = (
     folder: string = "anycomp"
 ): Promise<UploadApiResponse> => {
     return new Promise((resolve, reject) => {
+        // Validate buffer
+        if (!fileBuffer || fileBuffer.length === 0) {
+            const error = new Error("File buffer is empty or undefined");
+            logger.error("Cloudinary upload validation failed:", error);
+            reject(error);
+            return;
+        }
+
+        logger.info("Starting Cloudinary upload...", {
+            folder,
+            bufferSize: fileBuffer.length,
+        });
+
         const uploadStream = cloudinary.uploader.upload_stream(
             {
                 folder: folder,
@@ -30,13 +59,19 @@ export const uploadToCloudinary = (
             },
             (error, result) => {
                 if (error) {
-                    logger.error("Cloudinary upload error:", error);
+                    logger.error("Cloudinary upload error:", {
+                        message: error.message,
+                        error: error,
+                        http_code: error.http_code,
+                    });
                     reject(error);
                 } else if (result) {
                     logger.info(`File uploaded to Cloudinary: ${result.public_id}`);
                     resolve(result);
                 } else {
-                    reject(new Error("Upload failed with no result"));
+                    const err = new Error("Upload failed with no result");
+                    logger.error("Cloudinary upload failed:", err);
+                    reject(err);
                 }
             }
         );
