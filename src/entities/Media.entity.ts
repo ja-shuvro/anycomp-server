@@ -37,8 +37,8 @@ export class Media {
     @PrimaryGeneratedColumn("uuid")
     id: string;
 
-    @Column({ type: "uuid", name: "specialists" })
-    specialists: string;
+    @Column({ type: "uuid", name: "specialists", nullable: true })
+    specialists: string | null;
 
     @Column({ type: "varchar", length: 255, name: "file_name" })
     @IsString()

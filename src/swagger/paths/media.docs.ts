@@ -10,7 +10,7 @@
  * /media/upload:
  *   post:
  *     summary: Upload media file (Authenticated)
- *     description: Upload an image, video, or document for a specialist profile. Requires SPECIALIST role and ownership of the specialist record.
+ *     description: Upload an image, video, or document. Can optionally be associated with a specialist. Requires SPECIALIST role. If specialistId is provided, user must own that specialist.
  *     tags: [Media]
  *     security:
  *       - BearerAuth: []
@@ -22,7 +22,6 @@
  *             type: object
  *             required:
  *               - file
- *               - specialistId
  *             properties:
  *               file:
  *                 type: string
@@ -31,7 +30,7 @@
  *               specialistId:
  *                 type: string
  *                 format: uuid
- *                 description: ID of the specialist
+ *                 description: ID of the specialist (optional - can be assigned later)
  *               displayOrder:
  *                 type: integer
  *                 minimum: 0
@@ -46,12 +45,52 @@
  *       400:
  *         description: Invalid file type or missing required fields
  *       404:
- *         description: Specialist not found
+ *         description: Specialist not found (if specialistId provided)
  *
  * /media/{id}:
+ *   put:
+ *     summary: Update media (Owner Only)
+ *     description: Update specialist assignment and/or display order. If changing specialist, user must own both the current and new specialist.
+ *     tags: [Media]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               specialistId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: New specialist ID to assign the media to
+ *               displayOrder:
+ *                 type: integer
+ *                 minimum: 0
+ *                 description: New display order
+ *     responses:
+ *       200:
+ *         description: Media updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Media'
+ *       404:
+ *         description: Media or specialist not found
+ *       403:
+ *         description: Permission denied
+ *
  *   delete:
  *     summary: Delete media file (Owner Only)
- *     description: Soft deletes the media record and removes the physical file. Requires ownership of the associated specialist.
+ *     description: Soft deletes the media record and removes the physical file. Requires ownership of the associated specialist (if assigned).
  *     tags: [Media]
  *     security:
  *       - BearerAuth: []
@@ -93,7 +132,7 @@
  * /media/{id}/reorder:
  *   patch:
  *     summary: Update display order (Owner Only)
- *     description: Change the display order of a media file. Requires ownership of the associated specialist.
+ *     description: Change the display order of a media file. Requires ownership of the associated specialist (if assigned).
  *     tags: [Media]
  *     security:
  *       - BearerAuth: []

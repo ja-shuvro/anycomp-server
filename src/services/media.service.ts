@@ -53,33 +53,40 @@ export class MediaService {
      * Upload media file
      */
     async upload(
-        specialistId: string,
+        specialistId: string | undefined,
         file: Express.Multer.File,
         user?: any,
         displayOrder?: number
     ): Promise<Media> {
-        await this.checkSpecialistOwnership(specialistId, user);
-        // Verify specialist exists
-        const specialist = await this.specialistRepo.findOne({ where: { id: specialistId } });
-        if (!specialist) {
-            // Clean up uploaded file
-            fs.unlinkSync(file.path);
-            throw new NotFoundError("Specialist not found");
-        }
+        // Only check ownership if specialistId is provided
+        if (specialistId) {
+            await this.checkSpecialistOwnership(specialistId, user);
 
-        // Determine display order if not provided
-        if (displayOrder === undefined) {
-            const maxOrder = await this.mediaRepo
-                .createQueryBuilder("media")
-                .where("media.specialists = :specialistId", { specialistId })
-                .select("MAX(media.displayOrder)", "max")
-                .getRawOne();
-            displayOrder = (maxOrder?.max ?? -1) + 1;
+            // Verify specialist exists
+            const specialist = await this.specialistRepo.findOne({ where: { id: specialistId } });
+            if (!specialist) {
+                // Clean up uploaded file
+                fs.unlinkSync(file.path);
+                throw new NotFoundError("Specialist not found");
+            }
+
+            // Determine display order if not provided
+            if (displayOrder === undefined) {
+                const maxOrder = await this.mediaRepo
+                    .createQueryBuilder("media")
+                    .where("media.specialists = :specialistId", { specialistId })
+                    .select("MAX(media.displayOrder)", "max")
+                    .getRawOne();
+                displayOrder = (maxOrder?.max ?? -1) + 1;
+            }
+        } else {
+            // If no specialist ID, default display order to 0
+            displayOrder = displayOrder ?? 0;
         }
 
         // Create media record
         const media = this.mediaRepo.create({
-            specialists: specialistId,
+            specialists: specialistId || null,
             fileName: file.filename,
             fileSize: file.size,
             displayOrder: displayOrder,
@@ -90,7 +97,7 @@ export class MediaService {
         });
 
         const savedMedia = await this.mediaRepo.save(media);
-        logger.info(`Media uploaded: ${savedMedia.id} for specialist ${specialistId}`);
+        logger.info(`Media uploaded: ${savedMedia.id}${specialistId ? ` for specialist ${specialistId}` : ''}`);
 
         return savedMedia;
     }
@@ -104,9 +111,9 @@ export class MediaService {
             throw new NotFoundError("Media not found");
         }
 
-        await this.checkSpecialistOwnership(media.specialists, user);
-        if (!media) {
-            throw new NotFoundError("Media not found");
+        // Only check ownership if media has a specialist assigned
+        if (media.specialists) {
+            await this.checkSpecialistOwnership(media.specialists, user);
         }
 
         // Delete physical file
@@ -140,12 +147,54 @@ export class MediaService {
             throw new NotFoundError("Media not found");
         }
 
-        await this.checkSpecialistOwnership(media.specialists, user);
-        if (!media) {
-            throw new NotFoundError("Media not found");
+        // Only check ownership if media has a specialist assigned
+        if (media.specialists) {
+            await this.checkSpecialistOwnership(media.specialists, user);
         }
 
         media.displayOrder = newOrder;
         return await this.mediaRepo.save(media);
+    }
+
+    /**
+     * Update media (specialist assignment and/or display order)
+     */
+    async update(
+        id: string,
+        specialistId?: string,
+        displayOrder?: number,
+        user?: any
+    ): Promise<Media> {
+        const media = await this.mediaRepo.findOne({ where: { id } });
+        if (!media) {
+            throw new NotFoundError("Media not found");
+        }
+
+        // Check ownership for existing specialist
+        if (media.specialists) {
+            await this.checkSpecialistOwnership(media.specialists, user);
+        }
+
+        // Check ownership for new specialist if changing
+        if (specialistId && specialistId !== media.specialists) {
+            await this.checkSpecialistOwnership(specialistId, user);
+
+            // Verify new specialist exists
+            const specialist = await this.specialistRepo.findOne({ where: { id: specialistId } });
+            if (!specialist) {
+                throw new NotFoundError("Specialist not found");
+            }
+
+            media.specialists = specialistId;
+        }
+
+        if (displayOrder !== undefined) {
+            media.displayOrder = displayOrder;
+        }
+
+        const updatedMedia = await this.mediaRepo.save(media);
+        logger.info(`Media updated: ${id}`);
+
+        return updatedMedia;
     }
 }

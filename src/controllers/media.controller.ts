@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { MediaService } from "../services/media.service";
 import { successResponse } from "../utils/response.helper";
 import { UploadMediaDto } from "../dto/media/upload-media.dto";
+import { UpdateMediaDto } from "../dto/media/update-media.dto";
 import { plainToInstance } from "class-transformer";
 import { validate } from "class-validator";
 
@@ -49,6 +50,40 @@ export class MediaController {
             );
 
             return successResponse(res, media, "Media uploaded successfully", 201);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /**
+     * Update media
+     */
+    async update(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { id } = req.params;
+
+            // Validate DTO
+            const dto = plainToInstance(UpdateMediaDto, req.body);
+            const errors = await validate(dto);
+            if (errors.length > 0) {
+                return res.status(400).json({
+                    success: false,
+                    error: {
+                        code: "VALIDATION_ERROR",
+                        message: "Validation failed",
+                        details: errors,
+                    },
+                });
+            }
+
+            const media = await this.service.update(
+                id,
+                dto.specialistId,
+                dto.displayOrder,
+                req.user
+            );
+
+            return successResponse(res, media, "Media updated successfully");
         } catch (error) {
             next(error);
         }

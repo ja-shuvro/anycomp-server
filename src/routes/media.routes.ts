@@ -14,9 +14,17 @@ router.post(
     "/media/upload",
     authMiddleware,
     roleMiddleware([UserRole.ADMIN, UserRole.SPECIALIST]),
-    ownershipMiddleware("specialist", "body", "specialistId"),
+    // ownershipMiddleware removed - handled in service to allow uploads without specialistId
     upload.single("file"),
     controller.upload.bind(controller)
+);
+
+// PUT /media/:id - Update media (specialist assignment and/or display order)
+router.put(
+    "/media/:id",
+    authMiddleware,
+    // Ownership checked in service based on existing and new specialistId
+    controller.update.bind(controller)
 );
 
 // DELETE /media/:id - Delete media

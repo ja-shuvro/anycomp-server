@@ -11,6 +11,7 @@
  *         specialists:
  *           type: string
  *           format: uuid
+ *           nullable: true
  *         fileName:
  *           type: string
  *         fileSize:

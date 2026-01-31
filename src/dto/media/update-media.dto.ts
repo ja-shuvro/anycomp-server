@@ -2,9 +2,9 @@ import { IsUUID, IsInt, Min, IsOptional } from "class-validator";
 import { Transform } from "class-transformer";
 
 /**
- * DTO for uploading media
+ * DTO for updating media
  */
-export class UploadMediaDto {
+export class UpdateMediaDto {
     @IsUUID()
     @IsOptional()
     specialistId?: string;
