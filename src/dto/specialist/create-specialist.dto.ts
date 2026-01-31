@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsNumber, IsOptional, Length, Min, IsArray, IsUUID } from "class-validator";
+import { IsString, IsNotEmpty, IsNumber, IsOptional, Length, Min, IsArray, IsUUID, ValidateIf } from "class-validator";
 
 /**
  * DTO for creating a new specialist
@@ -26,6 +26,7 @@ export class CreateSpecialistDto {
 
     @IsString()
     @IsOptional()
+    @ValidateIf((o) => o.slug && o.slug.length > 0)
     @Length(3, 255)
     slug?: string;
 
