@@ -13,7 +13,7 @@
  *           format: email
  *         role:
  *           type: string
- *           enum: [ADMIN, SPECIALIST]
+ *           enum: [admin, specialist, client]
  *         createdAt:
  *           type: string
  *           format: date-time
@@ -33,7 +33,7 @@
  *           minLength: 6
  *         role:
  *           type: string
- *           enum: [ADMIN, SPECIALIST]
+ *           enum: [admin, specialist, client]
  *
  *     LoginRequest:
  *       type: object

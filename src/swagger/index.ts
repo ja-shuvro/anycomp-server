@@ -12,6 +12,7 @@
 import './paths/platform-fee.docs';
 import './paths/health.docs';
 import './paths/media.docs';
+import './paths/user.docs';
 import './schemas/media.schema';
 
 // Export schemas for programmatic use
