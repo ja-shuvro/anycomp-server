@@ -25,9 +25,30 @@ export { app };
 app.use(securityMiddleware);
 
 // CORS configuration
+// Support multiple origins separated by commas in CORS_ORIGIN env variable
+// Example: CORS_ORIGIN="http://localhost:3000,https://yourdomain.com,https://www.yourdomain.com"
+const allowedOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+    : ['*'];
+
 app.use(
     cors({
-        origin: process.env.CORS_ORIGIN || "*",
+        origin: (origin, callback) => {
+            // Allow requests with no origin (like mobile apps, curl, Postman)
+            if (!origin) return callback(null, true);
+
+            // If allowedOrigins includes '*', allow all origins
+            if (allowedOrigins.includes('*')) {
+                return callback(null, true);
+            }
+
+            // Check if the origin is in the allowed list
+            if (allowedOrigins.indexOf(origin) !== -1) {
+                callback(null, true);
+            } else {
+                callback(new Error('Not allowed by CORS'));
+            }
+        },
         credentials: true,
     })
 );
