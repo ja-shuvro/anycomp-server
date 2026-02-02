@@ -162,12 +162,23 @@ export const setupSwagger = (app: Application): void => {
         customfavIcon: FAVICON_URL,
         swaggerOptions: {
             persistAuthorization: true,
+            displayRequestDuration: true,
         },
     };
 
     app.use("/api-docs", swaggerUi.serve);
     app.get("/api-docs", (req, res) => {
-        res.send(swaggerUi.generateHTML(swaggerSpec, swaggerOptions));
+        const html = swaggerUi.generateHTML(swaggerSpec, swaggerOptions);
+
+        // Explicitly replace default relative asset URLs with CDN URLs to prevent 404s on Vercel
+        const fixedHtml = html
+            .replace(/href="\.\/swagger-ui\.css"/g, `href="${CSS_URL}"`)
+            .replace(/src="\.\/swagger-ui-bundle\.js"/g, `src="${JS_BUNDLE_URL}"`)
+            .replace(/src="\.\/swagger-ui-standalone-preset\.js"/g, `src="${JS_PRESET_URL}"`)
+            .replace(/href="\.\/favicon-32x32\.png"/g, `href="${FAVICON_URL}"`)
+            .replace(/href="\.\/favicon-16x16\.png"/g, `href="${FAVICON_URL}"`);
+
+        res.send(fixedHtml);
     });
 
     // Swagger JSON
