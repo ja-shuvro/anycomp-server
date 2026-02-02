@@ -20,7 +20,7 @@ export const AppDataSource = new DataSource({
     synchronize: process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test",
     logging: process.env.LOGGING === "true",
     entities: [Specialist, PlatformFee, ServiceOfferingsMasterList, ServiceOffering, Media, User],
-    migrations: ["src/migrations/**/*.ts"],
+    migrations: (process.env.NODE_ENV === "production" || process.env.VERCEL) ? [] : ["src/migrations/**/*.ts"],
     subscribers: ["src/subscribers/**/*.ts"],
     // SSL configuration for cloud databases (Supabase, AWS RDS, etc.)
     // SSL configuration for cloud databases (Supabase, AWS RDS, etc.)

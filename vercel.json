@@ -6,9 +6,10 @@
             "use": "@vercel/node",
             "config": {
                 "includeFiles": [
-                    "src/**/*.ts",
-                    "src/**/*.js",
-                    "src/**/*.yaml"
+                    "src/routes/**/*.ts",
+                    "src/controllers/**/*.ts",
+                    "src/swagger/**/*.ts",
+                    "src/entities/**/*.ts"
                 ]
             }
         }
