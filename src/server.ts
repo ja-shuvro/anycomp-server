@@ -37,19 +37,23 @@ app.use(
             // Allow requests with no origin (like mobile apps, curl, Postman)
             if (!origin) return callback(null, true);
 
-            // If allowedOrigins includes '*', allow all origins
-            if (allowedOrigins.includes('*')) {
-                return callback(null, true);
-            }
-
             // Check if the origin is in the allowed list
-            if (allowedOrigins.indexOf(origin) !== -1) {
+            const isAllowed = allowedOrigins.some(allowed => {
+                if (allowed === '*') return true;
+                return allowed === origin;
+            });
+
+            if (isAllowed) {
                 callback(null, true);
             } else {
-                callback(new Error('Not allowed by CORS'));
+                // Using (null, false) instead of an Error avoids 500 errors
+                // and correctly triggers a browser CORS failure
+                callback(null, false);
             }
         },
         credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
     })
 );
 
