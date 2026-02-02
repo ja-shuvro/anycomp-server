@@ -1,6 +1,7 @@
 import swaggerJsdoc from "swagger-jsdoc";
 import { Application } from "express";
 import swaggerUi from "swagger-ui-express";
+import path from "path";
 
 const options: swaggerJsdoc.Options = {
     definition: {
@@ -135,14 +136,25 @@ const options: swaggerJsdoc.Options = {
         ],
     },
     apis: [
-        "./src/routes/*.ts",
-        "./src/controllers/*.ts",
-        "./src/swagger/paths/*.ts",
-        "./src/swagger/schemas/*.ts"
+        path.resolve(__dirname, "../routes/*.ts"),
+        path.resolve(__dirname, "../controllers/*.ts"),
+        path.resolve(__dirname, "../swagger/paths/*.ts"),
+        path.resolve(__dirname, "../swagger/schemas/*.ts"),
+        // Include compiled js files as well
+        path.resolve(__dirname, "../routes/*.js"),
+        path.resolve(__dirname, "../controllers/*.js"),
+        path.resolve(__dirname, "../swagger/paths/*.js"),
+        path.resolve(__dirname, "../swagger/schemas/*.js"),
     ],
 };
 
 const swaggerSpec = swaggerJsdoc(options);
+
+// Log if no paths are found to help debug Vercel deployment issues
+const spec = swaggerSpec as any;
+if (!spec.paths || Object.keys(spec.paths).length === 0) {
+    console.warn("⚠️ Swagger Warning: No API paths were found. Check if your source files are included in the deployment.");
+}
 
 /**
  * Setup Swagger documentation
@@ -171,12 +183,12 @@ export const setupSwagger = (app: Application): void => {
         const html = swaggerUi.generateHTML(swaggerSpec, swaggerOptions);
 
         // Explicitly replace default relative asset URLs with CDN URLs to prevent 404s on Vercel
+        // Using a more robust regex to handle potential query strings or variations in quotes
         const fixedHtml = html
-            .replace(/href="\.\/swagger-ui\.css"/g, `href="${CSS_URL}"`)
-            .replace(/src="\.\/swagger-ui-bundle\.js"/g, `src="${JS_BUNDLE_URL}"`)
-            .replace(/src="\.\/swagger-ui-standalone-preset\.js"/g, `src="${JS_PRESET_URL}"`)
-            .replace(/href="\.\/favicon-32x32\.png"/g, `href="${FAVICON_URL}"`)
-            .replace(/href="\.\/favicon-16x16\.png"/g, `href="${FAVICON_URL}"`);
+            .replace(/(href|src)=["']\.\/swagger-ui\.css[^"']*["']/g, `$1="${CSS_URL}"`)
+            .replace(/(href|src)=["']\.\/swagger-ui-bundle\.js[^"']*["']/g, `$1="${JS_BUNDLE_URL}"`)
+            .replace(/(href|src)=["']\.\/swagger-ui-standalone-preset\.js[^"']*["']/g, `$1="${JS_PRESET_URL}"`)
+            .replace(/(href|src)=["']\.\/favicon-[^"']*["']/g, `$1="${FAVICON_URL}"`);
 
         res.send(fixedHtml);
     });
