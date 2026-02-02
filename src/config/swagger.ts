@@ -149,21 +149,26 @@ const swaggerSpec = swaggerJsdoc(options);
  */
 export const setupSwagger = (app: Application): void => {
     // Swagger UI
-    const CSS_URL = "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.0.0/swagger-ui.min.css";
-    const JS_URL = [
-        "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.0.0/swagger-ui-bundle.min.js",
-        "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.0.0/swagger-ui-standalone-preset.min.js",
-    ];
+    // Swagger UI setup with CDN assets for Vercel compatibility
+    const CSS_URL = "https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.11.0/swagger-ui.css";
+    const JS_BUNDLE_URL = "https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.11.0/swagger-ui-bundle.js";
+    const JS_PRESET_URL = "https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.11.0/swagger-ui-standalone-preset.js";
+    const FAVICON_URL = "https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.11.0/favicon-32x32.png";
 
-    app.use(
-        "/api-docs",
-        swaggerUi.serve,
-        swaggerUi.setup(swaggerSpec, {
-            customCssUrl: CSS_URL,
-            customJs: JS_URL,
-            customSiteTitle: "Anycomp API Docs",
-        })
-    );
+    const swaggerOptions = {
+        customCssUrl: CSS_URL,
+        customJs: [JS_BUNDLE_URL, JS_PRESET_URL],
+        customSiteTitle: "Anycomp API Docs",
+        customfavIcon: FAVICON_URL,
+        swaggerOptions: {
+            persistAuthorization: true,
+        },
+    };
+
+    app.use("/api-docs", swaggerUi.serve);
+    app.get("/api-docs", (req, res) => {
+        res.send(swaggerUi.generateHTML(swaggerSpec, swaggerOptions));
+    });
 
     // Swagger JSON
     app.get("/api-docs.json", (req, res) => {
